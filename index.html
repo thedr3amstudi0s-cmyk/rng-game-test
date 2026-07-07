@@ -2876,6 +2876,32 @@ function normalizeLeet(str){
   return str.toLowerCase().split('').map(c=>LEET[c]||c).join('');
 }
 
+// ============================================================
+// PITY SYSTEM — Top 5 Crates
+// ============================================================
+const PITY_CRATES = ['dragon', 'celestial', 'divine', 'primordial', 'ultra'];
+const PITY_START = 100000;
+
+function getPity(crateId) {
+  if (!PITY_CRATES.includes(crateId)) return null;
+  return S.profile?.pityCounter?.[crateId] ?? PITY_START;
+}
+
+function decrementPity(crateId) {
+  if (!PITY_CRATES.includes(crateId) || !S.profile) return;
+  if (!S.profile.pityCounter) S.profile.pityCounter = {};
+  const cur = S.profile.pityCounter[crateId] ?? PITY_START;
+  S.profile.pityCounter[crateId] = Math.max(0, cur - 1);
+  db.collection('users').doc(S.user.uid).update({ pityCounter: S.profile.pityCounter }).catch(()=>{});
+}
+
+function resetPity(crateId) {
+  if (!PITY_CRATES.includes(crateId) || !S.profile) return;
+  if (!S.profile.pityCounter) S.profile.pityCounter = {};
+  S.profile.pityCounter[crateId] = PITY_START;
+  db.collection('users').doc(S.user.uid).update({ pityCounter: S.profile.pityCounter }).catch(()=>{});
+}
+
 function filterChat(text){
   if(!text) return '';
   const norm = normalizeLeet(text);
@@ -3552,7 +3578,7 @@ function updateLuckBar(crate){
   if(hugeRatio>=0.9){ status.textContent='🌟 '+fmtNum(toHuge)+' coins to HUGE BOOST!'; status.style.color='#f59e0b'; }
   else { status.textContent='✨ '+fmtNum(toMinor)+' coins to next boost'; status.style.color='var(--text-3)'; }
 
-    // PITY PROGRESS BAR (visible ticking)
+     // PITY PROGRESS BAR
   if (crate && PITY_CRATES.includes(crate.id)) {
     const pity = getPity(crate.id);
     const pct = Math.max(0, (pity / PITY_START) * 100);
@@ -6780,7 +6806,7 @@ async function openGemCrate(crateId){
   const pets = PETS_BY_CRATE[crate.id] || [];
   let result = null;
 
-  // PITY SYSTEM
+  // === PITY SYSTEM ===
   const pityValue = getPity(crate.id);
   if (pityValue === 0) {
     const pets = getPetsForCrate(crate.id);
@@ -6790,6 +6816,7 @@ async function openGemCrate(crateId){
       resetPity(crate.id);
     }
   }
+  
   if(!result){
     // Roll normal item
     const pool = crate.items.map(id => getItem(id)).filter(Boolean);
@@ -6824,11 +6851,10 @@ async function openGemCrate(crateId){
       inventory: S.inventory,
       totalValue: S.profile.totalValue,
     });
-
-  if (PITY_CRATES.includes(crate.id)) {
-    decrementPity(crate.id);
-    updateLuckBar(crate);
-  }
+    if (PITY_CRATES.includes(crate.id)) {
+      decrementPity(crate.id);
+      updateLuckBar(crate);
+    }
   }catch(e){ toast('Save error: '+e.message,'error'); }
 
   const r = getRarity(result.rarity);
