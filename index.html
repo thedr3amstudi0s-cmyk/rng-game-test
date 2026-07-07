@@ -831,6 +831,18 @@ input,select{font-family:inherit;color:inherit;border:none;outline:none;backgrou
               <div class="luck-bar-milestone" style="left:90%"></div>
             </div>
             <div class="luck-bar-status" id="luck-bar-status"></div>
+
+            <!-- PITY BAR — only shown for pity-eligible gem crates -->
+            <div id="pity-container" style="display:none;margin-top:12px;background:var(--bg-card);padding:10px 12px;border-radius:8px;border:1px solid #f59e0b44">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+                <span style="font-family:var(--font-d);font-size:.7rem;font-weight:700;letter-spacing:.1em;color:#f59e0b">🎯 PITY</span>
+                <span id="pity-count" style="font-family:var(--font-m);font-size:.7rem;color:var(--text-3)">0 / 100</span>
+              </div>
+              <div class="luck-bar-track" style="height:10px">
+                <div id="pity-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:8px;transition:width .5s ease"></div>
+              </div>
+              <div id="pity-status" style="text-align:center;font-family:var(--font-d);font-size:.68rem;margin-top:5px;color:var(--text-3)">Open crates to fill the pity bar</div>
+            </div>
           </div>
           <div class="open-price-display" id="open-price-display"></div>
           <div style="display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap">
@@ -2020,7 +2032,7 @@ function getPityReduction(){
 // increments the counter. Once it hits PITY_THRESHOLD (adjusted
 // by equipped Patient Soul pets), the next open is guaranteed a pet.
 // ============================================================
-const PITY_CRATES = ['dragon', 'celestial', 'divine', 'primordial', 'ultra'];
+const PITY_CRATES = ['gem_shadow', 'gem_aurora', 'gem_prism', 'gem_void', 'gem_egg'];
 const PITY_THRESHOLD_BASE = 100; // opens without a pet before pity triggers
 
 // Effective threshold — Patient Soul pets reduce it (each % of reduction = fewer opens needed).
@@ -3561,37 +3573,35 @@ function updateLuckBar(crate){
   if(hugeRatio>=0.9){ status.textContent='🌟 '+fmtNum(toHuge)+' coins to HUGE BOOST!'; status.style.color='#f59e0b'; }
   else { status.textContent='✨ '+fmtNum(toMinor)+' coins to next boost'; status.style.color='var(--text-3)'; }
 
-  // PITY PROGRESS BAR (counts up — fills as player opens without getting a pet)
-  if (crate && PITY_CRATES.includes(crate.id)) {
+  // PITY BAR — show for pity crates, hide for others
+  const pityContainer = document.getElementById('pity-container');
+  const pityFill = document.getElementById('pity-fill');
+  const pityCount = document.getElementById('pity-count');
+  const pityStatus = document.getElementById('pity-status');
+
+  if(crate && PITY_CRATES.includes(crate.id)){
     const counter = getPityCounter(crate.id);
     const threshold = getPityThreshold();
     const pct = Math.min(100, (counter / threshold) * 100);
     const remaining = Math.max(0, threshold - counter);
 
-    let container = document.getElementById('pity-container');
-    if (!container) {
-      const html = `
-        <div id="pity-container" style="margin-top:12px;background:var(--bg-card);padding:8px;border-radius:6px;border:1px solid #f59e0b33">
-          <div style="font-family:var(--font-d);font-size:.7rem;color:#f59e0b;margin-bottom:4px">🎯 PITY — ${crate.name}</div>
-          <div class="luck-bar-track" style="height:10px;margin:4px 0">
-            <div id="pity-fill" style="height:100%;width:${pct}%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:4px;transition:width .6s ease"></div>
-          </div>
-          <div style="text-align:center;font-size:.72rem;color:#f59e0b;font-family:var(--font-m)" id="pity-count"></div>
-        </div>`;
-      document.querySelector('.luck-bar-wrap').insertAdjacentHTML('beforeend', html);
-    }
-    const fillEl = document.getElementById('pity-fill');
-    const countEl = document.getElementById('pity-count');
-    if(fillEl) fillEl.style.width = pct + '%';
-    if(countEl){
+    if(pityContainer) pityContainer.style.display = 'block';
+    if(pityFill) pityFill.style.width = pct + '%';
+    if(pityCount) pityCount.textContent = `${counter} / ${threshold}`;
+    if(pityStatus){
       if(remaining === 0){
-        countEl.textContent = '🌟 PITY READY — next pet is guaranteed!';
-        countEl.style.color = '#ef4444';
+        pityStatus.textContent = '🌟 PITY READY — next open guaranteed pet!';
+        pityStatus.style.color = '#ef4444';
+      } else if(pct >= 75){
+        pityStatus.textContent = `⚠️ ${remaining} more opens for guaranteed pet!`;
+        pityStatus.style.color = '#f59e0b';
       } else {
-        countEl.textContent = `${counter} / ${threshold} opens  (${remaining} more for guaranteed pet)`;
-        countEl.style.color = pct >= 75 ? '#f59e0b' : 'var(--text-3)';
+        pityStatus.textContent = `${remaining} more opens for guaranteed pet`;
+        pityStatus.style.color = 'var(--text-3)';
       }
     }
+  } else {
+    if(pityContainer) pityContainer.style.display = 'none';
   }
 }
 
@@ -6695,7 +6705,8 @@ function openGemCratePage(crateId){
   document.getElementById('open-price-display').innerHTML = `Cost: 💎 <span style="color:#a855f7;font-weight:900">${crate.gemPrice.toLocaleString()} Gems</span> &nbsp;(Balance: 💎 <span id="gem-price-balance">${fmtNum(S.profile.gems||0)}</span>)`;
   document.getElementById('opening-coin-balance').parentElement.style.display = 'none';
   document.getElementById('result-panel').classList.add('hidden');
-  updateLuckBar(null);
+  updateLuckBar(crate);
+  renderActiveBoosts();
   buildGemCrateInfoPanel(crate);
   // Build a spin track from gem crate items
   const fakeCrate = {...crate, price: crate.gemPrice, id: crate.id};
@@ -6749,7 +6760,8 @@ function openGemCratePage(crateId){
   document.getElementById('open-price-display').innerHTML = `Cost: 💎 <span style="color:#a855f7;font-weight:900">${crate.gemPrice.toLocaleString()} Gems</span> &nbsp;(Balance: 💎 <span id="gem-price-balance">${fmtNum(S.profile.gems||0)}</span>)`;
   document.getElementById('opening-coin-balance').parentElement.style.display = 'none';
   document.getElementById('result-panel').classList.add('hidden');
-  updateLuckBar(null);
+  updateLuckBar(crate);
+  renderActiveBoosts();
   buildGemCrateInfoPanel(crate);
   // Build a spin track from gem crate items
   const fakeCrate = {...crate, price: crate.gemPrice, id: crate.id};
