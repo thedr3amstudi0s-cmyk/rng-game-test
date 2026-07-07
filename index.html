@@ -1701,9 +1701,9 @@ const PETS_BY_CRATE = {
     {id:'p_ete3', name:'Eternal Coin Dragon', rarity:'pet', icon:'🐉', value:88000000, desc:'Endless riches.', perk:'discount', perkName:'Eternal Deal I', perkDesc:'-27% off all crate prices'},
   ],
   'genesis': [
-    {id:'p_gen1', name:'Genesis Phoenix', rarity:'pet', icon:'🐦‍🔥', value:95000000, desc:'Birth of fortune.', perk:'luck', perkName:'Genesis Luck I', perkDesc:'Luck boosts are twice as powerful + fill 50% faster'},
+    {id:'p_gen1', name:'Genesis Phoenix', rarity:'pet', icon:'🐦‍🔥', value:95000000, desc:'Birth of all fortune.', perk:'luck', perkName:'Genesis Luck II', perkDesc:'Luck boosts are 2.5x as powerful + fill 70% faster + +15% base luck on every open'},
     {id:'p_gen2', name:'Origin Speedster', rarity:'pet', icon:'⚡', value:95000000, desc:'The first burst of speed.', perk:'speed', perkName:'Quad Crack', perkDesc:'Open 4 crates at once for the price of 1'},
-    {id:'p_gen3', name:'Creation Boar', rarity:'pet', icon:'🐗', value:95000000, desc:'Source of all value.', perk:'discount', perkName:'Genesis Deal I', perkDesc:'-30% off all crate prices'},
+    {id:'p_gen3', name:'Creation Boar', rarity:'pet', icon:'🐗', value:95000000, desc:'Source of all value.', perk:'discount', perkName:'Genesis Deal II', perkDesc:'-35% off all crate prices + +25% sell bonus + +15% gem find chance'},
   ],
   // VIP-exclusive pet — purchase only, NEVER drops from any crate.
   // Kept in its own bucket so it's excluded from getPetsForCrate() / crate odds entirely.
@@ -2012,6 +2012,32 @@ function getSellBonusMultiplier(){
 function getPityReduction(){
   const v = getShopPerkValue('pity');
   return v / 100;
+}
+
+// ============================================================
+// PITY SYSTEM - Top 5 Crates
+// ============================================================
+const PITY_CRATES = ['dragon', 'celestial', 'divine', 'primordial', 'ultra'];
+const PITY_START = 100000;
+
+function getPity(crateId) {
+  if (!PITY_CRATES.includes(crateId)) return null;
+  return S.profile?.pityCounter?.[crateId] ?? PITY_START;
+}
+
+function decrementPity(crateId) {
+  if (!PITY_CRATES.includes(crateId) || !S.profile) return;
+  if (!S.profile.pityCounter) S.profile.pityCounter = {};
+  const cur = S.profile.pityCounter[crateId] ?? PITY_START;
+  S.profile.pityCounter[crateId] = Math.max(0, cur - 1);
+  db.collection('users').doc(S.user.uid).update({ pityCounter: S.profile.pityCounter }).catch(()=>{});
+}
+
+function resetPity(crateId) {
+  if (!PITY_CRATES.includes(crateId) || !S.profile) return;
+  if (!S.profile.pityCounter) S.profile.pityCounter = {};
+  S.profile.pityCounter[crateId] = PITY_START;
+  db.collection('users').doc(S.user.uid).update({ pityCounter: S.profile.pityCounter }).catch(()=>{});
 }
 
 // Called after a successful crate roll — chance to find bonus gems
@@ -2912,8 +2938,9 @@ const S = {
   gems: 0, currentGemCrate: null,
   lastOpenedInvItem: null,
   listenersInitialized: false,
-  // FIX: track per-session which trade rooms we've already executed, prevents double execution on refresh
   executedTradeIds: new Set(),
+  pityCounter: {},     // pity system per crate
+};
 };
 
 // ============================================================
@@ -6731,10 +6758,17 @@ async function openGemCrate(crateId){
   // Pet check first (1 in 10,000)
   const pets = PETS_BY_CRATE[crate.id] || [];
   let result = null;
-  for(const pet of pets){
-    if(Math.random() < 0.0001){ result = pet; break; }
-  }
 
+  // PITY SYSTEM
+  const pityValue = getPity(crate.id);
+  if (pityValue === 0) {
+    const pets = getPetsForCrate(crate.id);
+    if (pets && pets.length > 0) {
+      result = pets[Math.floor(Math.random() * pets.length)];
+      toast(`🌟 PITY REACHED! You got ${result.icon} ${result.name}!`, 'gold', 6000);
+      resetPity(crate.id);
+    }
+  }
   if(!result){
     // Roll normal item
     const pool = crate.items.map(id => getItem(id)).filter(Boolean);
@@ -6769,6 +6803,8 @@ async function openGemCrate(crateId){
       inventory: S.inventory,
       totalValue: S.profile.totalValue,
     });
+
+  if (PITY_CRATES.includes(crate.id)) decrementPity(crate.id);
   }catch(e){ toast('Save error: '+e.message,'error'); }
 
   const r = getRarity(result.rarity);
