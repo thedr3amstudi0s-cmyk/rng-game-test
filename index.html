@@ -5834,9 +5834,19 @@ async function redeemCode(){
           for(const iid of reward.itemIds){
             const item = getItem(iid);
             if(!item) throw new Error('BAD_REWARD');
-            newInventory.push({itemId:item.id, uniqueId:genUID(), crateSource:'code', obtainedAt:new Date().toISOString()});
+            newInventory.push({
+              itemId:item.id,
+              uniqueId:genUID(),
+              crateSource:'code',
+              obtainedAt:new Date().toISOString()
+            });
             labels.push(`${item.icon} ${item.name}`);
           }
+        }
+        
+        if(reward.autoroll){
+          grantAutoRoll = true;
+          labels.push('⚡ Auto-Roll');
         }
         if(!labels.length) throw new Error('BAD_REWARD');
         grantedLabel = labels.join(', ');
@@ -6011,7 +6021,12 @@ const DEFAULT_PRODUCTS = [
     id: 'vip_pack',
     label: 'VIP Pack — 🐉 VIP Golden Drake + 500 Gems',
     priceLabel: '$10.00',
-    reward: { type: 'bundle', petId: 'p_vip1', gems: 500 },
+    reward: {
+    type: 'bundle',
+    petId: 'p_vip1',
+    gems: 500,
+    autoroll: true
+  },
     active: true,
   },
   {
