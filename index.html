@@ -2015,29 +2015,37 @@ function getPityReduction(){
 }
 
 // ============================================================
-// PITY SYSTEM - Top 5 Crates
+// PITY SYSTEM
+// Applies to gem crates (PITY_CRATES). Each open without a pet
+// increments the counter. Once it hits PITY_THRESHOLD (adjusted
+// by equipped Patient Soul pets), the next open is guaranteed a pet.
 // ============================================================
 const PITY_CRATES = ['dragon', 'celestial', 'divine', 'primordial', 'ultra'];
-const PITY_START = 100000;
+const PITY_THRESHOLD_BASE = 100; // opens without a pet before pity triggers
 
-function getPity(crateId) {
-  if (!PITY_CRATES.includes(crateId)) return null;
-  return S.profile?.pityCounter?.[crateId] ?? PITY_START;
+// Effective threshold — Patient Soul pets reduce it (each % of reduction = fewer opens needed).
+function getPityThreshold(){
+  const reduction = getPityReduction(); // 0–1 from pet perks, cap 1
+  return Math.max(1, Math.floor(PITY_THRESHOLD_BASE * (1 - Math.min(1, reduction))));
 }
 
-function decrementPity(crateId) {
-  if (!PITY_CRATES.includes(crateId) || !S.profile) return;
-  if (!S.profile.pityCounter) S.profile.pityCounter = {};
-  const cur = S.profile.pityCounter[crateId] ?? PITY_START;
-  S.profile.pityCounter[crateId] = Math.max(0, cur - 1);
-  db.collection('users').doc(S.user.uid).update({ pityCounter: S.profile.pityCounter }).catch(()=>{});
+function getPityCounter(crateId){
+  if(!PITY_CRATES.includes(crateId)) return null;
+  return S.profile?.pityCounter?.[crateId] ?? 0;
 }
 
-function resetPity(crateId) {
-  if (!PITY_CRATES.includes(crateId) || !S.profile) return;
-  if (!S.profile.pityCounter) S.profile.pityCounter = {};
-  S.profile.pityCounter[crateId] = PITY_START;
-  db.collection('users').doc(S.user.uid).update({ pityCounter: S.profile.pityCounter }).catch(()=>{});
+async function incrementPity(crateId){
+  if(!PITY_CRATES.includes(crateId) || !S.profile) return;
+  if(!S.profile.pityCounter) S.profile.pityCounter = {};
+  S.profile.pityCounter[crateId] = (S.profile.pityCounter[crateId] ?? 0) + 1;
+  try{ await db.collection('users').doc(S.user.uid).update({ pityCounter: S.profile.pityCounter }); }catch(e){}
+}
+
+async function resetPity(crateId){
+  if(!PITY_CRATES.includes(crateId) || !S.profile) return;
+  if(!S.profile.pityCounter) S.profile.pityCounter = {};
+  S.profile.pityCounter[crateId] = 0;
+  try{ await db.collection('users').doc(S.user.uid).update({ pityCounter: S.profile.pityCounter }); }catch(e){}
 }
 
 // Called after a successful crate roll — chance to find bonus gems
@@ -2819,10 +2827,11 @@ function renderActiveBoosts(){
     boosts.push({ icon:'🪙', label:'Sell Bonus', val:`+${pct}% coins when selling`, color:'#f59e0b' });
   }
 
-  // --- PITY — use actual getPityReduction() ---
+  // --- PITY — use actual getPityThreshold() ---
   const pityPct = Math.round(getPityReduction() * 100);
   if(pityPct > 0){
-    boosts.push({ icon:'⏳', label:'Luck Threshold', val:`-${pityPct}% coins needed for luck boosts`, color:'#3b82f6' });
+    const threshold = getPityThreshold();
+    boosts.push({ icon:'⏳', label:'Pity Threshold', val:`-${pityPct}% fewer opens for guaranteed pet (${threshold} opens needed instead of ${PITY_THRESHOLD_BASE})`, color:'#3b82f6' });
   }
 
   // --- GEM FINDER — use actual getShopPerkValue() ---
@@ -3552,25 +3561,36 @@ function updateLuckBar(crate){
   if(hugeRatio>=0.9){ status.textContent='🌟 '+fmtNum(toHuge)+' coins to HUGE BOOST!'; status.style.color='#f59e0b'; }
   else { status.textContent='✨ '+fmtNum(toMinor)+' coins to next boost'; status.style.color='var(--text-3)'; }
 
-    // PITY PROGRESS BAR (visible ticking)
+  // PITY PROGRESS BAR (counts up — fills as player opens without getting a pet)
   if (crate && PITY_CRATES.includes(crate.id)) {
-    const pity = getPity(crate.id);
-    const pct = Math.max(0, (pity / PITY_START) * 100);
-    
+    const counter = getPityCounter(crate.id);
+    const threshold = getPityThreshold();
+    const pct = Math.min(100, (counter / threshold) * 100);
+    const remaining = Math.max(0, threshold - counter);
+
     let container = document.getElementById('pity-container');
     if (!container) {
       const html = `
         <div id="pity-container" style="margin-top:12px;background:var(--bg-card);padding:8px;border-radius:6px;border:1px solid #f59e0b33">
-          <div style="font-family:var(--font-d);font-size:.7rem;color:#f59e0b">PITY — ${crate.name}</div>
-          <div class="luck-bar-track" style="height:10px;margin:6px 0">
-            <div id="pity-fill" style="height:100%;width:${pct}%;background:linear-gradient(90deg,#f59e0b,#ef4444);transition:width .6s ease"></div>
+          <div style="font-family:var(--font-d);font-size:.7rem;color:#f59e0b;margin-bottom:4px">🎯 PITY — ${crate.name}</div>
+          <div class="luck-bar-track" style="height:10px;margin:4px 0">
+            <div id="pity-fill" style="height:100%;width:${pct}%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:4px;transition:width .6s ease"></div>
           </div>
-          <div style="text-align:center;font-size:.75rem;color:#f59e0b;font-family:var(--font-m)" id="pity-count">${fmtNum(pity)}</div>
+          <div style="text-align:center;font-size:.72rem;color:#f59e0b;font-family:var(--font-m)" id="pity-count"></div>
         </div>`;
       document.querySelector('.luck-bar-wrap').insertAdjacentHTML('beforeend', html);
-    } else {
-      document.getElementById('pity-fill').style.width = pct + '%';
-      document.getElementById('pity-count').textContent = fmtNum(pity);
+    }
+    const fillEl = document.getElementById('pity-fill');
+    const countEl = document.getElementById('pity-count');
+    if(fillEl) fillEl.style.width = pct + '%';
+    if(countEl){
+      if(remaining === 0){
+        countEl.textContent = '🌟 PITY READY — next pet is guaranteed!';
+        countEl.style.color = '#ef4444';
+      } else {
+        countEl.textContent = `${counter} / ${threshold} opens  (${remaining} more for guaranteed pet)`;
+        countEl.style.color = pct >= 75 ? '#f59e0b' : 'var(--text-3)';
+      }
     }
   }
 }
@@ -6780,14 +6800,18 @@ async function openGemCrate(crateId){
   const pets = PETS_BY_CRATE[crate.id] || [];
   let result = null;
 
-  // PITY SYSTEM
-  const pityValue = getPity(crate.id);
-  if (pityValue === 0) {
-    const pets = getPetsForCrate(crate.id);
-    if (pets && pets.length > 0) {
-      result = pets[Math.floor(Math.random() * pets.length)];
-      toast(`🌟 PITY REACHED! You got ${result.icon} ${result.name}!`, 'gold', 6000);
-      resetPity(crate.id);
+  // PITY SYSTEM — guaranteed pet after enough non-pet opens
+  const isPityCrate = PITY_CRATES.includes(crate.id);
+  const pityCounter = isPityCrate ? getPityCounter(crate.id) : 0;
+  const pityThreshold = getPityThreshold();
+  const pityTriggered = isPityCrate && pityCounter >= pityThreshold;
+
+  if(pityTriggered){
+    const pitPets = getPetsForCrate(crate.id);
+    if(pitPets && pitPets.length > 0){
+      result = pitPets[Math.floor(Math.random() * pitPets.length)];
+      toast(`🌟 PITY TRIGGERED after ${pityCounter} opens! You got ${result.icon} ${result.name}!`, 'gold', 7000);
+      await resetPity(crate.id);
     }
   }
   if(!result){
@@ -6825,10 +6849,15 @@ async function openGemCrate(crateId){
       totalValue: S.profile.totalValue,
     });
 
-  if (PITY_CRATES.includes(crate.id)) {
-    decrementPity(crate.id);
-    updateLuckBar(crate);
-  }
+    // Increment pity on non-pet rolls; reset if a pet was rolled naturally
+    if(isPityCrate){
+      if(result.rarity === 'pet'){
+        await resetPity(crate.id);
+      } else {
+        await incrementPity(crate.id);
+      }
+      updateLuckBar(crate);
+    }
   }catch(e){ toast('Save error: '+e.message,'error'); }
 
   const r = getRarity(result.rarity);
