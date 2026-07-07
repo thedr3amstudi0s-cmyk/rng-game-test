@@ -3551,6 +3551,28 @@ function updateLuckBar(crate){
   const toHuge=huge-hugeProgress;
   if(hugeRatio>=0.9){ status.textContent='🌟 '+fmtNum(toHuge)+' coins to HUGE BOOST!'; status.style.color='#f59e0b'; }
   else { status.textContent='✨ '+fmtNum(toMinor)+' coins to next boost'; status.style.color='var(--text-3)'; }
+
+    // PITY PROGRESS BAR (visible ticking)
+  if (crate && PITY_CRATES.includes(crate.id)) {
+    const pity = getPity(crate.id);
+    const pct = Math.max(0, (pity / PITY_START) * 100);
+    
+    let container = document.getElementById('pity-container');
+    if (!container) {
+      const html = `
+        <div id="pity-container" style="margin-top:12px;background:var(--bg-card);padding:8px;border-radius:6px;border:1px solid #f59e0b33">
+          <div style="font-family:var(--font-d);font-size:.7rem;color:#f59e0b">PITY — ${crate.name}</div>
+          <div class="luck-bar-track" style="height:10px;margin:6px 0">
+            <div id="pity-fill" style="height:100%;width:${pct}%;background:linear-gradient(90deg,#f59e0b,#ef4444);transition:width .6s ease"></div>
+          </div>
+          <div style="text-align:center;font-size:.75rem;color:#f59e0b;font-family:var(--font-m)" id="pity-count">${fmtNum(pity)}</div>
+        </div>`;
+      document.querySelector('.luck-bar-wrap').insertAdjacentHTML('beforeend', html);
+    } else {
+      document.getElementById('pity-fill').style.width = pct + '%';
+      document.getElementById('pity-count').textContent = fmtNum(pity);
+    }
+  }
 }
 
 // ============================================================
@@ -6803,7 +6825,10 @@ async function openGemCrate(crateId){
       totalValue: S.profile.totalValue,
     });
 
-  if (PITY_CRATES.includes(crate.id)) decrementPity(crate.id);
+  if (PITY_CRATES.includes(crate.id)) {
+    decrementPity(crate.id);
+    updateLuckBar(crate);
+  }
   }catch(e){ toast('Save error: '+e.message,'error'); }
 
   const r = getRarity(result.rarity);
