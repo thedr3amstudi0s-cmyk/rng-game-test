@@ -2049,26 +2049,26 @@ function getPityCounter(crateId){
 async function incrementPity(crateId){
   if(!PITY_CRATES.includes(crateId) || !S.profile) return;
   if(!S.profile.pityCounter) S.profile.pityCounter = {};
-  
-  let incrementAmount = 1;
-  
-  // 2x Open Pet check - doubles pity counter progress
-  const equipped2xPet = has2xPityPetEquipped(); // you'll need to implement this helper
-  if(equipped2xPet){
-    incrementAmount = 2;
+
+  let amount = 1;
+
+  // 2X OPEN PET — doubles pity progress
+  if (has2xPityPetEquipped()) {
+    amount = 2;
   }
-  
-  S.profile.pityCounter[crateId] = (S.profile.pityCounter[crateId] ?? 0) + incrementAmount;
-  
+  if (has4xPityPetEquipped()) {
+    amount = 4;
+  }
+
+  S.profile.pityCounter[crateId] = (S.profile.pityCounter[crateId] ?? 0) + amount;
+
   try{ 
     await db.collection('users').doc(S.user.uid).update({ pityCounter: S.profile.pityCounter }); 
-    // Optional: toast for 2x progress
-    if(incrementAmount === 2) {
-      console.log(`2x pity progress applied for ${crateId}`);
-    }
   }catch(e){}
-}
 
+  console.log(`[PITY] ${crateId} +${amount} → ${S.profile.pityCounter[crateId]}`);
+}
+  
 async function resetPity(crateId){
   if(!PITY_CRATES.includes(crateId) || !S.profile) return;
   if(!S.profile.pityCounter) S.profile.pityCounter = {};
@@ -2688,7 +2688,17 @@ function has2xPityPetEquipped(){
   // Example: assume a pet with id like 'p_2x_pity'
   return petIds.some(id => {
     const pet = getItem(id);
-    return pet && (pet.perk === 'pity2x' || pet.id === 'p_double_pity'); 
+    return pet && (pet.perk === 'pity2x' || pet.id === 'p_vip1', 'p_ete2', 'p_tra2', 'p_cos2'); 
+  });
+}
+
+function has4xPityPetEquipped(){
+  // Check equipped pets for a new 'pity2x' perk or specific pet IDs
+  const petIds = PET_SLOT_FIELDS.map(f => S.profile?.[f]).filter(Boolean);
+  // Example: assume a pet with id like 'p_2x_pity'
+  return petIds.some(id => {
+    const pet = getItem(id);
+    return pet && (pet.perk === 'pity2x' || pet.id === 'p_gen2'); 
   });
 }
 
