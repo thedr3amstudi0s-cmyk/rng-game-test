@@ -2072,11 +2072,15 @@ async function incrementPity(crateId){
   }
 }
   
-async function resetPity(crateId){
-  if(!PITY_CRATES.includes(crateId) || !S.profile) return;
-  if(!S.profile.pityCounter) S.profile.pityCounter = {};
+function resetPity(crateId){
+  if(!S.profile || !S.profile.pityCounter) return;
   S.profile.pityCounter[crateId] = 0;
-  try{ await db.collection('users').doc(S.user.uid).update({ pityCounter: S.profile.pityCounter }); }catch(e){}
+  try{
+    db.collection('users').doc(S.user.uid).update({
+      [`pityCounter.${crateId}`]: 0
+    });
+  }catch(e){}
+  console.log(`[PITY] Reset pity for ${crateId}`);
 }
 
 // Called after a successful crate roll — chance to find bonus gems
@@ -3924,19 +3928,24 @@ function rollItem(crateId){
   const crate=CRATES.find(c=>c.id===crateId);
   if(!crate) return null;
 
-// === PITY CHECK — guaranteed pet if threshold reached ===
+  // === PITY CHECK — guaranteed pet if threshold reached ===
   if(PITY_CRATES.includes(crateId)){
     const counter = getPityCounter(crateId);
     const threshold = getPityThreshold();
+    
     if(counter >= threshold){
       const pitPets = getPetsForCrate(crateId);
       if(pitPets && pitPets.length > 0){
         const pet = pitPets[Math.floor(Math.random() * pitPets.length)];
+        
         toast(`🔴 PITY TRIGGERED after ${counter} opens! You got ${pet.icon} ${pet.name}!`, 'gold', 7000);
-        await resetPity(crateId);
-      return pet;
+        
+        // Reset pity (no await needed here if resetPity is not async)
+        resetPity(crateId);
+        
+        return pet;   // ALWAYS return exactly 1 pet
+      }
     }
-  }
 }
 
   const cratePets=getPetsForCrate(crateId);
