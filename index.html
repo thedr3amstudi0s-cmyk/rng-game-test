@@ -2051,12 +2051,8 @@ async function incrementPity(crateId){
   if(!S.profile.pityCounter) S.profile.pityCounter = {};
 
   let amount = 1;
-
-  if (has4xPityPetEquipped()) {
-    amount = 4;
-  } else if (has2xPityPetEquipped()) {
-    amount = 2;
-  }
+  if (has4xPityPetEquipped()) amount = 4;
+  else if (has2xPityPetEquipped()) amount = 2;
 
   S.profile.pityCounter[crateId] = (S.profile.pityCounter[crateId] ?? 0) + amount;
 
@@ -2065,6 +2061,11 @@ async function incrementPity(crateId){
   }catch(e){}
 
   console.log(`[PITY] ${crateId} +${amount} → ${S.profile.pityCounter[crateId]}`);
+
+  // FORCE UI UPDATE
+  if (S.currentCrate && S.currentCrate.id === crateId) {
+    updateLuckBar(S.currentCrate);
+  }
 }
   
 async function resetPity(crateId){
@@ -3205,6 +3206,9 @@ function startAuthObserver(){
       }
       if(!doc||!doc.exists){ toast('Profile not found. Please log in again.','error'); await auth.signOut(); return; }
       S.profile=doc.data();
+      if (S.profile && !S.profile.pityCounter) {
+        S.profile.pityCounter = {};
+      }
       S.inventory=[...S.profile.inventory||[]];
       S.hasAutoRoll = S.profile.hasAutoRoll === true;
       S.gems = S.profile.gems || 0;
