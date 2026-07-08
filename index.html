@@ -2680,49 +2680,40 @@ function hasVipPetEquipped() {
   return pet && pet.id === "p_vip1";
 }
 
+// 2X PET CHECK
 function has2xPityPetEquipped(){
   if(!S.profile) return false;
-  
-  // Get all equipped pet IDs (primary + extra slots)
   const equippedIds = PET_SLOT_FIELDS.map(f => S.profile[f]).filter(Boolean);
   
-  console.log('[2X CHECK] Equipped pets:', equippedIds); // ← DEBUG
+  console.log('[2X CHECK] Equipped IDs:', equippedIds);
   
-  return equippedIds.some(id => {
-    const pet = getItem(id);
+  return equippedIds.some(uid => {
+    const item = S.inventory.find(i => i.uniqueId === uid); // find in inventory
+    if(!item) return false;
+    const pet = getItem(item.itemId); // use base itemId
     if(!pet) return false;
     
-    // Support multiple pets
-    const is2x = pet.perk === 'pity2x' || 
-                 ['p_vip1', 'p_ete2', 'p_tra2', 'p_cos2'].includes(pet.id);
-    
-    if(is2x) console.log('[2X CHECK] Found 2x pet:', pet.id, pet.name);
-    
+    const is2x = pet.perk === 'pity2x' || ['p_vip1','p_ete2','p_tra2','p_cos2'].includes(pet.id);
+    if(is2x) console.log('[2X CHECK] ✅ Found 2x pet:', pet.id);
     return is2x;
   });
 }
 
+// 4X PET CHECK
 function has4xPityPetEquipped(){
   if(!S.profile) return false;
-  
-  // Get ALL equipped pets (primary + extra slots)
   const equippedIds = PET_SLOT_FIELDS.map(f => S.profile[f]).filter(Boolean);
   
-  console.log('[4X CHECK] Equipped pet IDs:', equippedIds); // DEBUG
+  console.log('[4X CHECK] Equipped IDs:', equippedIds);
   
-  return equippedIds.some(id => {
-    const pet = getItem(id);
+  return equippedIds.some(uid => {
+    const item = S.inventory.find(i => i.uniqueId === uid);
+    if(!item) return false;
+    const pet = getItem(item.itemId);
     if(!pet) return false;
     
-    // Check for 4x pity pet
-    const is4x = pet.perk === 'pity4x' || 
-                 pet.id === 'p_gen2' || 
-                 pet.id.includes('4x'); // fallback
-    
-    if(is4x){
-      console.log('[4X CHECK] ✅ Found 4x pity pet:', pet.id, pet.name);
-    }
-    
+    const is4x = pet.perk === 'pity4x' || pet.id === 'p_gen2' || pet.id.includes('4x');
+    if(is4x) console.log('[4X CHECK] ✅ Found 4x pet:', pet.id);
     return is4x;
   });
 }
