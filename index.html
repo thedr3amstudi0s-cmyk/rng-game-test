@@ -2228,7 +2228,7 @@ function renderTradeUpPage() {
     if (copies.length < 2) return;
 
     const pet = getItem(petId);
-    const unlockedCount = copies.filter(c => c.locked !== true).length; // old pets = unlocked
+    const unlockedCount = copies.filter(c => c.locked !== true).length;
 
     if (unlockedCount >= 2) hasEligible = true;
 
@@ -2278,8 +2278,7 @@ function openTradeUpPanel(petId, copies, unlockedCount) {
 
   document.getElementById('tradeup-btn-execute').onclick = async () => {
     await executeTradeUp(petId, sacrificeCount);
-    panel.classList.add('hidden');
-    overlay.classList.add('hidden');
+    closeTradeUpPanel();
   };
 
   overlay.classList.remove('hidden');
@@ -2301,11 +2300,11 @@ async function executeTradeUp(petId, count) {
 
   const pet = getItem(petId);
   const success = Math.random() * 100 < Math.min(92, 25 + (count-2)*12);
-  let resultPet = pet;
+  let resultPet = pet; // TODO: Implement real upgrade tiers here
 
   if (success) {
-    // Upgrade logic (expand as needed)
-    resultPet = pet; // placeholder — replace with your tier upgrade map
+    // Placeholder — upgrade to next rarity (expand this)
+    resultPet = pet;
   }
 
   const newItem = {itemId: resultPet.id, uniqueId: genUID(), crateSource: 'tradeup', obtainedAt: new Date().toISOString()};
@@ -2321,8 +2320,15 @@ async function executeTradeUp(petId, count) {
   }
 }
 
+function closeTradeUpPanel() {
+  const panel = document.getElementById('tradeup-panel');
+  const overlay = document.getElementById('tradeup-overlay');
+  if (panel) panel.classList.add('hidden');
+  if (overlay) overlay.classList.add('hidden');
+}
+
 // Close button
-document.getElementById('tradeup-panel-close').addEventListener('click', () => {
+document.getElementById('tradeup-panel-close').addEventListener('click', closeTradeUpPanel);
   document.getElementById('tradeup-panel').classList.add('hidden');
   document.getElementById('tradeup-overlay').classList.add('hidden');
 });
