@@ -6775,134 +6775,132 @@ function getNextPetSlotCost(){
 }
 
 // ============================================================
-// BATTLE PASS — Seasonal XP & Reward Track
+// BATTLE PASS CONSTANTS & HELPERS
 // ============================================================
+const BP_MAX_LEVEL = 50;
+const BP_XP_PER_LEVEL_BASE = 1000;
 
-// XP required to reach a given level (scales up — each level needs 10% more than the last)
-function getBpXpForLevel(targetLevel){
+function getBpSeason() {
+  return {
+    icon: "🎖️",
+    name: "Season 1: Neon Genesis",
+    subtitle: "Earn XP by opening crates. Premium unlocks exclusive rewards.",
+    pets: [
+      {id: "p_neon1", name: "Neon Fox", icon: "🦊", rarity: "legendary"},
+      {id: "p_neon2", name: "Cyber Drake", icon: "🐉", rarity: "mythic"},
+      {id: "p_neon3", name: "Void Phoenix", icon: "🔥", rarity: "divine"}
+    ]
+  };
+}
+
+function getBpSeasonKey() {
+  return "season1";
+}
+
+function getBpXpForLevel(targetLevel) {
   let total = 0;
-  for(let lv = 1; lv < targetLevel; lv++){
-    total += Math.floor(1000 * Math.pow(1.10, lv - 1));
+  for (let lv = 1; lv < targetLevel; lv++) {
+    total += Math.floor(BP_XP_PER_LEVEL_BASE * Math.pow(1.10, lv - 1));
   }
   return total;
 }
-// XP needed for the NEXT level from current total
-function getBpXpNeededForNext(level){
-  return Math.floor(1000 * Math.pow(1.10, level - 1));
+
+function getBpXpNeededForNext(level) {
+  return Math.floor(BP_XP_PER_LEVEL_BASE * Math.pow(1.10, level - 1));
 }
 
-function getBpLevel(totalXp){
-  if(!totalXp) return 1;
+function getBpLevel(totalXp) {
+  if (!totalXp) return 1;
   let level = 1;
   let xpRemaining = totalXp;
-  while(level < BP_MAX_LEVEL){
+  while (level < BP_MAX_LEVEL) {
     const needed = getBpXpNeededForNext(level);
-    if(xpRemaining < needed) break;
+    if (xpRemaining < needed) break;
     xpRemaining -= needed;
     level++;
   }
   return level;
 }
-function getBpXpIntoLevel(totalXp){
-  if(!totalXp) return 0;
+
+function getBpXpIntoLevel(totalXp) {
+  if (!totalXp) return 0;
   let level = 1, rem = totalXp;
-  while(level < BP_MAX_LEVEL){
+  while (level < BP_MAX_LEVEL) {
     const needed = getBpXpNeededForNext(level);
-    if(rem < needed) return rem;
+    if (rem < needed) return rem;
     rem -= needed;
     level++;
   }
   return 0;
 }
 
-// XP per crate open — scales with crate price
-function getBpXpForCrate(crate){
-  if(!crate) return 0;
+function getBpXpForCrate(crate) {
+  if (!crate) return 15;
   const p = crate.price || 0;
-  if(p >= 4000000) return 500;
-  if(p >= 2000000) return 300;
-  if(p >= 500000)  return 150;
-  if(p >= 100000)  return 75;
-  if(p >= 10000)   return 35;
+  if (p >= 4000000) return 500;
+  if (p >= 2000000) return 300;
+  if (p >= 500000)  return 150;
+  if (p >= 100000)  return 75;
+  if (p >= 10000)   return 35;
   return 15;
 }
 
-// Build a track with EXACTLY ONE reward per level per track (free / premium)
-function buildBpTrack(season){
+// Build reward track
+function buildBpTrack(season) {
   const track = [];
   const pets = season.pets || [];
-  // pet drops at levels 10, 25, 50 (free), and 15, 35 (premium)
-  const petLevels   = {10:pets[0], 25:pets[1]};
-  const premLevels  = {15:pets[2]};
-
-  for(let lv = 1; lv <= BP_MAX_LEVEL; lv++){
+  for (let lv = 1; lv <= BP_MAX_LEVEL; lv++) {
     const free = [], prem = [];
 
-    // Coins scaling
     const coins = lv * 50000;
-    free.push({type:'coins', val:coins, icon:'🪙', label:'Coins', display: fmtNum(coins)});
+    free.push({type:'coins', val:coins, icon:'🪙', label:'Coins', display: coins.toLocaleString()});
 
-    // Gems every 5 levels (premium gets 2x)
-    if(lv % 5 === 0){
-      free.push({type:'gems', val:lv*2, icon:'💎', label:'Gems', display:lv*2+' Gems'});
-      prem.push({type:'gems', val:lv*4, icon:'💎', label:'Bonus Gems', display:'+'+lv*4+' Gems'});
+    if (lv % 5 === 0) {
+      free.push({type:'gems', val:lv*2, icon:'💎', label:'Gems', display:lv*2+' 💎'});
+      prem.push({type:'gems', val:lv*4, icon:'💎', label:'Bonus Gems', display:'+'+lv*4+' 💎'});
     }
 
-    // Premium coins bonus every level
-    prem.push({type:'coins', val:coins*2, icon:'🪙', label:'Premium Coins', display:fmtNum(coins*2)});
+    prem.push({type:'coins', val:coins*2, icon:'🪙', label:'Premium Coins', display:(coins*2).toLocaleString()});
 
-    // Extra gems every 10 levels (premium only)
-    if(lv % 10 === 0){
-      prem.push({type:'gems', val:lv*10, icon:'💎', label:'Premium Gems', display:lv*10+' Gems'});
+    if (lv % 10 === 0) {
+      prem.push({type:'gems', val:lv*10, icon:'💎', label:'Premium Gems', display:lv*10+' 💎'});
     }
 
-    // Pets
-    if(petLevels[lv]){
-      free.push({type:'pet', petId:petLevels[lv].id, icon:petLevels[lv].icon, label:'Season Pet', display:petLevels[lv].name});
-    }
-    if(premLevels[lv]){
-      prem.push({type:'pet', petId:premLevels[lv].id, icon:premLevels[lv].icon, label:'Premium Pet', display:premLevels[lv].name, premium:true});
+    if (lv === 10 && pets[0]) free.push({type:'pet', petId:pets[0].id, icon:pets[0].icon, label:'Pet', display:pets[0].name});
+    if (lv === 25 && pets[1]) free.push({type:'pet', petId:pets[1].id, icon:pets[1].icon, label:'Pet', display:pets[1].name});
+    if (lv === 15 && pets[2]) prem.push({type:'pet', petId:pets[2].id, icon:pets[2].icon, label:'Premium Pet', display:pets[2].name, premium:true});
+
+    if (lv === 50) {
+      free.push({type:'gems', val:500, icon:'💎', label:'SEASON COMPLETE', display:'500 💎'});
+      prem.push({type:'gems', val:2000, icon:'💎', label:'PREMIUM COMPLETE', display:'2000 💎'});
     }
 
-    // Special milestones
-    if(lv === 50){
-      free.push({type:'gems', val:500, icon:'💎', label:'SEASON COMPLETE!', display:'500 Gems'});
-      prem.push({type:'gems', val:2000, icon:'💎', label:'PREMIUM COMPLETE!', display:'2000 Bonus Gems'});
-    }
-
-    track.push({level:lv, free, premium:prem});
+    track.push({level: lv, free, premium: prem});
   }
   return track;
 }
 
-function renderBattlePass(){
-  if(!S.profile) return;
-
+function renderBattlePass() {
+  if (!S.profile) return;
   const season = getBpSeason();
   const seasonKey = getBpSeasonKey();
-  const bpData = S.profile.battlePass?.[seasonKey] || {};
+  const bpData = S.profile.battlePass?.[seasonKey] || {xp: 0, claimed: []};
   const xp = bpData.xp || 0;
   const level = getBpLevel(xp);
   const xpInto = getBpXpIntoLevel(xp);
   const isPremium = bpData.premium === true;
   const claimed = bpData.claimed || [];
 
-  // Register season pets so getItem() can find them
-  for(const pet of (season.pets||[])){
-    if(pet && !getItem(pet.id)) SHOP_PETS.push(pet);
-  }
-
-  // Header
   document.getElementById('bp-season-title').textContent = season.icon + ' ' + season.name;
   document.getElementById('bp-season-subtitle').textContent = season.subtitle;
   document.getElementById('bp-level-badge').textContent = `LV ${level}`;
-  const xpLabel = level >= BP_MAX_LEVEL ? 'MAX LEVEL' : `${fmtNum(xpInto)} / ${fmtNum(BP_XP_PER_LEVEL)} XP to next level`;
+  
+  const xpLabel = level >= BP_MAX_LEVEL ? 'MAX LEVEL' : `${xpInto.toLocaleString()} / ${getBpXpNeededForNext(level).toLocaleString()} XP`;
   document.getElementById('bp-xp-label').textContent = xpLabel;
-  document.getElementById('bp-xp-fill').style.width = level >= BP_MAX_LEVEL ? '100%' : ((xpInto/BP_XP_PER_LEVEL)*100)+'%';
+  document.getElementById('bp-xp-fill').style.width = level >= BP_MAX_LEVEL ? '100%' : Math.min(100, (xpInto / getBpXpNeededForNext(level) * 100)) + '%';
   document.getElementById('bp-premium-badge').classList.toggle('hidden', !isPremium);
   document.getElementById('bp-buy-cta').style.display = isPremium ? 'none' : '';
 
-  // Track
   const track = buildBpTrack(season);
   const container = document.getElementById('bp-track');
   container.innerHTML = '';
@@ -6912,42 +6910,51 @@ function renderBattlePass(){
     const row = document.createElement('div');
     row.className = 'bp-tier';
 
-    // Spine line (visual connector)
     const spine = document.createElement('div');
     spine.className = 'bp-spine' + (reached ? ' bp-spine-done' : '');
     row.appendChild(spine);
 
-    // Level number
     const num = document.createElement('div');
     num.className = 'bp-tier-num' + (level === tier.level ? ' bp-tier-current' : reached ? ' bp-tier-done' : '');
-    num.innerHTML = reached ? `<span style="color:#22c55e">✓</span><br><span style="font-size:.62rem">${tier.level}</span>` : tier.level;
+    num.innerHTML = reached ? `<span style="color:#22c55e">✓</span><br>${tier.level}` : tier.level;
     row.appendChild(num);
 
-    // Free rewards
+    // Free column
     const freeCol = document.createElement('div');
-    freeCol.style.cssText = 'display:flex;flex-direction:column;gap:4px;padding:4px 4px 4px 0;';
+    freeCol.style.cssText = 'display:flex;flex-direction:column;gap:4px;padding:4px;';
     tier.free.forEach(r => {
       const claimKey = `${tier.level}_free_${r.type}_${r.val||r.petId}`;
       const isClaimed = claimed.includes(claimKey);
       const canClaim = reached && !isClaimed;
       const card = document.createElement('div');
-      card.className = `bp-reward-card ${isClaimed?'bp-claimed':''}`;
-      card.innerHTML = `<span class="bp-tag-free bp-reward-tag">FREE</span><span class="bp-reward-icon">${r.icon}</span><div class="bp-reward-label">${r.label}</div><div class="bp-reward-val">${r.display}</div>${canClaim?`<button class="bp-claim-btn" onclick="claimBpReward('${claimKey}','${r.type}',${r.val||0},'${r.petId||''}')">CLAIM</button>`:''}`;
+      card.className = `bp-reward-card ${isClaimed ? 'bp-claimed' : ''}`;
+      card.innerHTML = `
+        <span class="bp-tag-free bp-reward-tag">FREE</span>
+        <span class="bp-reward-icon">${r.icon}</span>
+        <div class="bp-reward-label">${r.label}</div>
+        <div class="bp-reward-val">${r.display}</div>
+        ${canClaim ? `<button class="bp-claim-btn" onclick="claimBpReward('${claimKey}','${r.type}',${r.val||0},'${r.petId||''}')">CLAIM</button>` : ''}
+      `;
       freeCol.appendChild(card);
     });
     row.appendChild(freeCol);
 
-    // Premium rewards
+    // Premium column
     const premCol = document.createElement('div');
-    premCol.style.cssText = 'display:flex;flex-direction:column;gap:4px;padding:4px 4px 4px 0;';
+    premCol.style.cssText = 'display:flex;flex-direction:column;gap:4px;padding:4px;';
     tier.premium.forEach(r => {
       const claimKey = `${tier.level}_prem_${r.type}_${r.val||r.petId}`;
       const isClaimed = claimed.includes(claimKey);
       const canClaim = reached && isPremium && !isClaimed;
       const card = document.createElement('div');
-      card.className = `bp-reward-card bp-premium-card ${isClaimed?'bp-claimed':(!isPremium||!reached)?'bp-locked':''}`;
-      const lockIcon = !isPremium ? '🔒 ' : '';
-      card.innerHTML = `<span class="bp-tag-premium bp-reward-tag">⭐ PREMIUM</span><span class="bp-reward-icon">${r.icon}</span><div class="bp-reward-label">${lockIcon}${r.label}</div><div class="bp-reward-val">${r.display}</div>${canClaim?`<button class="bp-claim-btn" onclick="claimBpReward('${claimKey}','${r.type}',${r.val||0},'${r.petId||''}')">CLAIM</button>`:''}`;
+      card.className = `bp-reward-card bp-premium-card ${isClaimed ? 'bp-claimed' : (!isPremium || !reached) ? 'bp-locked' : ''}`;
+      card.innerHTML = `
+        <span class="bp-tag-premium bp-reward-tag">⭐ PREMIUM</span>
+        <span class="bp-reward-icon">${r.icon}</span>
+        <div class="bp-reward-label">${!isPremium ? '🔒 ' : ''}${r.label}</div>
+        <div class="bp-reward-val">${r.display}</div>
+        ${canClaim ? `<button class="bp-claim-btn" onclick="claimBpReward('${claimKey}','${r.type}',${r.val||0},'${r.petId||''}')">CLAIM</button>` : ''}
+      `;
       premCol.appendChild(card);
     });
     row.appendChild(premCol);
@@ -6956,74 +6963,55 @@ function renderBattlePass(){
   });
 }
 
-async function claimBpReward(claimKey, type, val, petId){
-  if(!S.user||!S.profile) return;
+async function claimBpReward(claimKey, type, val, petId) {
+  if (!S.user || !S.profile) return;
   const seasonKey = getBpSeasonKey();
-  const bpData = S.profile.battlePass?.[seasonKey] || {};
-  const claimed = [...(bpData.claimed||[])];
-  if(claimed.includes(claimKey)){ toast('Already claimed!','error'); return; }
+  const bpData = S.profile.battlePass?.[seasonKey] || {claimed: []};
+  let claimed = [...(bpData.claimed || [])];
+  if (claimed.includes(claimKey)) {
+    toast('Already claimed!', 'error');
+    return;
+  }
   claimed.push(claimKey);
 
-  if(type==='coins'){
-    S.profile.coins = (S.profile.coins||0) + val;
+  if (type === 'coins') {
+    S.profile.coins = (S.profile.coins || 0) + val;
     updateCoinDisplay(S.profile.coins);
-    toast(`🪙 +${fmtNum(val)} coins claimed!`, 'gold', 3000);
-  } else if(type==='gems'){
+  } else if (type === 'gems') {
     await grantGems(val);
-    toast(`💎 +${val} gems claimed!`, 'gold', 3000);
-  } else if(type==='pet'){
+  } else if (type === 'pet' && petId) {
     const pet = getItem(petId);
-    if(pet){
-      const inv = {itemId:petId, uniqueId:genUID(), crateSource:'battlepass', obtainedAt:new Date().toISOString()};
-      S.inventory.push(inv);
-      if(!S.profile.seenItems) S.profile.seenItems=[];
-      if(!S.profile.seenItems.includes(petId)) S.profile.seenItems.push(petId);
-      toast(`${pet.icon} ${pet.name} added to your inventory!`, 'gold', 5000);
+    if (pet) {
+      S.inventory.push({itemId: petId, uniqueId: genUID(), crateSource: 'battlepass', obtainedAt: new Date().toISOString()});
+      toast(`${pet.icon} ${pet.name} added!`, 'success');
     }
   }
 
-  if(!S.profile.battlePass) S.profile.battlePass = {};
-  if(!S.profile.battlePass[seasonKey]) S.profile.battlePass[seasonKey] = {};
+  if (!S.profile.battlePass) S.profile.battlePass = {};
+  if (!S.profile.battlePass[seasonKey]) S.profile.battlePass[seasonKey] = {};
   S.profile.battlePass[seasonKey].claimed = claimed;
-  S.profile.totalValue = S.inventory.reduce((s,i)=>{const it=getInvEffectiveItem(i);return s+(it?it.value:0);},0);
 
-  try{
-    const update = {totalValue:S.profile.totalValue};
-    update[`battlePass.${seasonKey}.claimed`] = claimed;
-    if(type==='coins') update.coins = S.profile.coins;
-    if(type==='pet') update.inventory = S.inventory;
+  try {
+    const update = {[`battlePass.${seasonKey}.claimed`]: claimed};
+    if (type === 'coins') update.coins = S.profile.coins;
+    if (type === 'pet') update.inventory = S.inventory;
     await db.collection('users').doc(S.user.uid).update(update);
-  }catch(e){ toast('Save error: '+e.message,'error'); return; }
+  } catch (e) {
+    toast('Save error', 'error');
+  }
 
   renderBattlePass();
 }
 
-async function grantBpXp(crate){
-  if(!S.user||!S.profile||!crate) return;
-  const xpGain = getBpXpForCrate(crate);
-  if(!xpGain) return;
-  const seasonKey = getBpSeasonKey();
-  if(!S.profile.battlePass) S.profile.battlePass = {};
-  if(!S.profile.battlePass[seasonKey]) S.profile.battlePass[seasonKey] = {xp:0, claimed:[]};
-  const prevLevel = getBpLevel(S.profile.battlePass[seasonKey].xp||0);
-  S.profile.battlePass[seasonKey].xp = (S.profile.battlePass[seasonKey].xp||0) + xpGain;
-  const newLevel = getBpLevel(S.profile.battlePass[seasonKey].xp);
-  if(newLevel > prevLevel) toast(`🎖️ Battle Pass Level Up! Now Level ${newLevel}!`, 'gold', 4000);
-  try{
-    await db.collection('users').doc(S.user.uid).update({
-      [`battlePass.${seasonKey}.xp`]: S.profile.battlePass[seasonKey].xp
-    });
-  }catch(e){}
-  if(document.getElementById('page-battlepass')?.classList.contains('active')) renderBattlePass();
-}
-
-async function buyPremiumPass(){
-  if(!S.user||!S.profile){ toast('Must be logged in.', 'error'); return; }
-  const seasonKey = getBpSeasonKey();
-  const season = getBpSeason();
-  toast(`To get the Premium Pass ($15/month), go to the Shop page and buy the "${season.name} Premium Pass" product, then an admin will activate it for you.`, 'gold', 8000);
+async function buyPremiumPass() {
+  toast('Go to the Shop page → "PREMIUM BATTLE PASS" product → pay via Cash App. An admin will activate it.', 'gold', 8000);
   showPage('shop');
 }
+
+// Call this when opening the battle pass page
+document.querySelector('[data-page="battlepass"]').addEventListener('click', () => {
+  setTimeout(renderBattlePass, 100);
+});
 
 function updatePetSlotPurchaseCard(){
   const btn = document.getElementById('petslot-purchase-btn');
