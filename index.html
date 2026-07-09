@@ -1102,50 +1102,61 @@ input,select{font-family:inherit;color:inherit;border:none;outline:none;backgrou
 
       <!-- SHOP -->
       <section class="page" id="page-shop">
-        <div class="page-header"><h2>🛒 SHOP</h2></div>
+        <div class="page-header"><h2>🛒 SHOP</h2><p>Pay via Cash App to <strong id="shop-cashtag" style="color:var(--text-1)">$DR3AMSTUDI0S</strong>. Click Buy, send payment with your order ID in the note, then submit your $cashtag.</p></div>
 
-        <div id="shop-tab-real">
-          <div style="font-size:.82rem;color:var(--text-3);margin-bottom:16px">
-            Pay via Cash App to <strong id="shop-cashtag2" style="color:var(--text-2)">$DR3AMSTUDI0S</strong>.
-            Click Buy, send payment with your order ID in the note, then submit your $cashtag.
+        <!-- Products -->
+        <div id="shop-products-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px"></div>
+
+        <!-- Order box (shown after clicking Buy) -->
+        <div id="shop-order-box" class="hidden" style="background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:16px">
+          <div style="font-family:var(--font-d);font-size:.75rem;color:var(--text-2);letter-spacing:.08em;margin-bottom:6px">YOUR ORDER ID</div>
+          <div id="shop-order-id" style="font-family:var(--font-m);font-size:1rem;color:var(--gold);font-weight:700;margin-bottom:12px"></div>
+          <div style="font-family:var(--font-d);font-size:.75rem;color:var(--text-2);letter-spacing:.08em;margin-bottom:6px">YOUR CASH APP $CASHTAG</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="text" id="shop-cashtag-input" placeholder="$YourCashtag"
+              style="flex:1;min-width:160px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;font-size:.9rem;color:var(--text-1);font-family:var(--font-m);"/>
+            <button class="btn-primary" id="shop-submit-tag-btn" style="width:auto;padding:10px 20px;white-space:nowrap">SUBMIT</button>
           </div>
-          <div id="shop-real-products" style="display:flex;flex-direction:column;gap:12px"></div>
-          <div id="shop-order-box2" class="hidden" style="margin-top:14px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:14px">
-            <div style="font-family:var(--font-d);font-size:.75rem;color:var(--text-2);letter-spacing:.08em;margin-bottom:6px">YOUR ORDER ID</div>
-            <div id="shop-order-id2" style="font-family:var(--font-m);font-size:1rem;color:var(--gold);font-weight:700;margin-bottom:12px"></div>
-            <div style="font-family:var(--font-d);font-size:.75rem;color:var(--text-2);letter-spacing:.08em;margin-bottom:6px">YOUR CASH APP $CASHTAG</div>
+          <div id="shop-order-msg" style="margin-top:8px;font-size:.82rem;min-height:18px"></div>
+        </div>
+
+        <!-- Player's own order history -->
+        <div id="shop-status-list" style="margin-bottom:20px"></div>
+
+        <!-- ADMIN: Pending Orders -->
+        <div class="hidden" id="admin-orders-section" style="margin-bottom:24px">
+          <div style="font-family:var(--font-d);font-size:.75rem;letter-spacing:.15em;color:var(--text-2);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">🛠️ ADMIN — PENDING ORDERS</div>
+          <div id="admin-orders-list" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+
+        <!-- ADMIN: Approved Orders (with revoke) -->
+        <div class="hidden" id="admin-approved-section" style="margin-bottom:24px">
+          <div style="font-family:var(--font-d);font-size:.75rem;letter-spacing:.15em;color:var(--text-2);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">✅ ADMIN — APPROVED ORDERS</div>
+          <div id="admin-approved-list" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+
+        <!-- ADMIN: Manage Products -->
+        <div class="hidden" id="admin-shop-manage-section" style="margin-bottom:24px">
+          <div style="font-family:var(--font-d);font-size:.75rem;letter-spacing:.15em;color:var(--text-2);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">🛍️ ADMIN — MANAGE PRODUCTS</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <input type="text" id="shop-cashtag-input2" placeholder="$YourCashtag"
-                style="flex:1;min-width:160px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;font-size:.9rem;color:var(--text-1);font-family:var(--font-m);"/>
-              <button class="btn-primary" id="shop-submit-tag-btn2" style="width:auto;padding:10px 20px;white-space:nowrap">SUBMIT</button>
+              <input type="text" id="new-prod-label" placeholder="Product name" style="flex:2;min-width:180px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1)"/>
+              <input type="text" id="new-prod-price-label" placeholder="$4.99" style="flex:1;min-width:90px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1);font-family:var(--font-m)"/>
             </div>
-            <div id="shop-order-msg2" style="margin-top:8px;font-size:.82rem;min-height:18px"></div>
-          </div>
-          <div id="shop-status-list2" style="margin-top:14px"></div>
-          <div class="hidden" id="admin-shop-manage-section2" style="margin-top:20px">
-            <div style="font-family:var(--font-d);font-size:.75rem;letter-spacing:.15em;color:var(--text-2);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">🛍️ ADMIN — MANAGE PRODUCTS</div>
-            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <input type="text" id="new-prod-label2" placeholder="Product name" style="flex:2;min-width:180px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1)"/>
-                <input type="text" id="new-prod-price-label2" placeholder="$4.99" style="flex:1;min-width:90px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1);font-family:var(--font-m)"/>
-              </div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-                <select id="new-prod-reward-type2" style="background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1)">
-                  <option value="coins">Coins</option>
-                  <option value="gems">Gems</option>
-                  <option value="item">Specific item</option>
-                  <option value="pet">Specific pet</option>
-                  <option value="bundle">Bundle</option>
-                  <option value="autoroll">Auto-Roll</option>
-                </select>
-                <input type="number" id="new-prod-amount2" placeholder="Amount" min="0" style="width:130px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1);font-family:var(--font-m)"/>
-                <input type="text" id="new-prod-item-id2" placeholder="Item/Pet ID" style="width:160px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1);font-family:var(--font-m)"/>
-              </div>
-              <button class="btn-primary" id="add-product-btn2" style="width:auto;padding:10px 20px;align-self:flex-start">+ ADD PRODUCT</button>
-              <div id="add-product-msg2" style="font-size:.8rem;min-height:18px"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <select id="new-prod-reward-type" style="background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1)">
+                <option value="coins">Coins only</option>
+                <option value="item">Specific item</option>
+                <option value="pet">Specific pet</option>
+                <option value="bundle">Bundle (coins + pet/item)</option>
+              </select>
+              <input type="number" id="new-prod-coins" placeholder="Coin amount" min="0" style="width:130px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1);font-family:var(--font-m)"/>
+              <input type="text" id="new-prod-item-id" placeholder="Item/Pet ID (e.g. p_vip1)" style="width:160px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1);font-family:var(--font-m)"/>
             </div>
-            <div id="admin-products-list2" style="display:flex;flex-direction:column;gap:8px"></div>
+            <button class="btn-primary" id="add-product-btn" style="width:auto;padding:10px 20px;align-self:flex-start">+ ADD PRODUCT</button>
+            <div id="add-product-msg" style="font-size:.8rem;min-height:18px"></div>
           </div>
+          <div id="admin-products-list" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
       </section>
 
@@ -1342,55 +1353,6 @@ input,select{font-family:inherit;color:inherit;border:none;outline:none;backgrou
         </div>
 
         <div class="settings-section">
-          <div class="settings-section-title">💎 SHOP</div>
-          <div style="font-size:.8rem;color:var(--text-3);margin-bottom:12px">
-            Pay via Cash App to <strong id="shop-cashtag" style="color:var(--text-2)">$YourCashtag</strong>.
-            Click Buy on an item below, send payment with your order ID in the note, then submit your $cashtag so we can verify it.
-          </div>
-          <div id="shop-products-list" style="display:flex;flex-direction:column;gap:12px"></div>
-          <div id="shop-order-box" class="hidden" style="margin-top:14px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:14px">
-            <div style="font-family:var(--font-d);font-size:.75rem;color:var(--text-2);letter-spacing:.08em;margin-bottom:6px">YOUR ORDER ID</div>
-            <div id="shop-order-id" style="font-family:var(--font-m);font-size:1rem;color:var(--gold);font-weight:700;margin-bottom:12px"></div>
-            <div style="font-family:var(--font-d);font-size:.75rem;color:var(--text-2);letter-spacing:.08em;margin-bottom:6px">YOUR CASH APP $CASHTAG</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <input type="text" id="shop-cashtag-input" placeholder="$YourCashtag"
-                style="flex:1;min-width:160px;background:var(--bg-card);border:1px solid var(--border);
-                border-radius:var(--r);padding:10px 14px;font-size:.9rem;color:var(--text-1);font-family:var(--font-m);"/>
-              <button class="btn-primary" id="shop-submit-tag-btn" style="width:auto;padding:10px 20px;white-space:nowrap">SUBMIT</button>
-            </div>
-            <div id="shop-order-msg" style="margin-top:8px;font-size:.82rem;min-height:18px"></div>
-          </div>
-          <div id="shop-status-list" style="margin-top:14px"></div>
-        </div>
-
-        <div class="settings-section hidden" id="admin-shop-manage-section">
-          <div class="settings-section-title">🛍️ ADMIN — MANAGE SHOP PRODUCTS</div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <input type="text" id="new-prod-label" placeholder="Product name (e.g. Coin Pack 5K)"
-                style="flex:2;min-width:180px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1)"/>
-              <input type="text" id="new-prod-price-label" placeholder="$4.99"
-                style="flex:1;min-width:90px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1);font-family:var(--font-m)"/>
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-              <select id="new-prod-reward-type" style="background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1)">
-                <option value="coins">Coins only</option>
-                <option value="item">Specific item</option>
-                <option value="pet">Specific pet</option>
-                <option value="bundle">Bundle (coins + pet/item)</option>
-              </select>
-              <input type="number" id="new-prod-coins" placeholder="Coin amount" min="0"
-                style="width:130px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1);font-family:var(--font-m)"/>
-              <input type="text" id="new-prod-item-id" placeholder="Item/Pet ID (e.g. p_vip1)"
-                style="width:160px;background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.85rem;color:var(--text-1);font-family:var(--font-m)"/>
-            </div>
-            <button class="btn-primary" id="add-product-btn" style="width:auto;padding:10px 20px;align-self:flex-start">+ ADD PRODUCT</button>
-            <div id="add-product-msg" style="font-size:.8rem;min-height:18px"></div>
-          </div>
-          <div id="admin-products-list" style="display:flex;flex-direction:column;gap:8px"></div>
-        </div>
-
-        <div class="settings-section">
           <div class="settings-section-title">🎟️ REDEEM CODE</div>
           <div class="settings-row" style="flex-wrap:wrap;gap:10px">
             <div class="settings-row-info" style="flex:1;min-width:200px">
@@ -1408,10 +1370,6 @@ input,select{font-family:inherit;color:inherit;border:none;outline:none;backgrou
           </div>
         </div>
 
-        <div class="settings-section hidden" id="admin-orders-section">
-          <div class="settings-section-title">🛠️ ADMIN — PENDING ORDERS</div>
-          <div id="admin-orders-list" style="display:flex;flex-direction:column;gap:10px"></div>
-        </div>
       </section>
 
     </main>
@@ -6204,7 +6162,6 @@ function renderMyOrders(orders){
   const list = document.getElementById('shop-status-list');
   if(!list) return;
   if(!orders.length){ list.innerHTML = ''; return; }
-
   const statusColor = { pending: 'var(--gold)', approved: '#22c55e', rejected: '#ef4444' };
   const statusLabel = { pending: '⏳ Pending review', approved: '✅ Approved', rejected: '❌ Rejected' };
 
@@ -6307,26 +6264,6 @@ function renderAdminOrders(orders){
       </div>
     </div>
   `).join('');
-}
-
-function listenToAdminOrders(){
-  if(!isAdminUser()) return;
-  document.getElementById('admin-orders-section').classList.remove('hidden');
-  if(adminOrdersListener) adminOrdersListener();
-
-  const unsub = db.collection('orders')
-    .where('status', '==', 'pending')
-    .onSnapshot(snap=>{
-      const orders = snap.docs.map(d=>d.data());
-      renderAdminOrders(orders);
-    }, err=>{
-      if(err.code === 'permission-denied') {
-        console.warn('Admin orders access denied (expected for non-admins)');
-      } else {
-        console.warn('Admin orders listener error:', err.message);
-      }
-    });
-  adminOrdersListener = unsub;
 }
 
 // ── ADMIN: manage shop products ────────────────────────────────
@@ -6541,12 +6478,13 @@ document.addEventListener('DOMContentLoaded', () => {
 let currentOrderId2 = null;
 
 function renderShopProducts2(){
-  const list = document.getElementById('shop-real-products');
+  // Products now render into the consolidated shop page
+  const list = document.getElementById('shop-products-list');
   if(!list) return;
   const products = shopProductsCache.length ? shopProductsCache : DEFAULT_PRODUCTS;
   const active = products.filter(p => p.active !== false);
   if(!active.length){
-    list.innerHTML = '<div style="color:var(--text-3);font-style:italic;font-size:.85rem">No products right now.</div>';
+    list.innerHTML = '<div style="color:var(--text-3);font-style:italic;font-size:.85rem">No products available right now.</div>';
     return;
   }
   list.innerHTML = active.map(p => `
@@ -6558,18 +6496,10 @@ function renderShopProducts2(){
       <button class="btn-primary" style="width:auto;padding:9px 18px;white-space:nowrap" onclick="createOrder2('${p.id}')">BUY</button>
     </div>
   `).join('');
+
   if(isAdminUser()){
-    const admin = document.getElementById('admin-shop-manage-section2');
-    if(admin) admin.classList.remove('hidden');
-    const adminList = document.getElementById('admin-products-list2');
-    if(adminList) adminList.innerHTML = active.map(p => `
-      <div style="background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <div>
-          <div style="font-family:var(--font-d);font-size:.8rem;color:var(--text-1)">${escHtml(p.label)} <span style="color:var(--gold)">${escHtml(p.priceLabel)}</span></div>
-        </div>
-        <button class="btn-ghost" style="border-color:#ef4444;color:#ef4444" onclick="toggleProductActive('${p.id}',false)">✗ DISABLE</button>
-      </div>
-    `).join('');
+    document.getElementById('admin-shop-manage-section').classList.remove('hidden');
+    renderAdminProducts(products);
   }
 }
 
@@ -6587,19 +6517,19 @@ async function createOrder2(productId){
       createdAt: new Date().toISOString(),
     });
     currentOrderId2 = orderId;
-    document.getElementById('shop-order-id2').textContent = orderId + '  (' + product.label + ')';
-    document.getElementById('shop-order-box2').classList.remove('hidden');
+    document.getElementById('shop-order-id').textContent = orderId + '  (' + product.label + ')';
+    document.getElementById('shop-order-box').classList.remove('hidden');
     toast('Order created! Send payment then submit your $cashtag.', 'success', 5000);
   }catch(e){ toast('Could not create order: ' + e.message, 'error'); }
 }
 
 async function submitCashTag2(){
   if(!currentOrderId2){ toast('No active order.', 'error'); return; }
-  const input = document.getElementById('shop-cashtag-input2');
-  const msg   = document.getElementById('shop-order-msg2');
+  const input = document.getElementById('shop-cashtag-input');
+  const msg   = document.getElementById('shop-order-msg');
   const cashtag = input.value.trim();
   if(!cashtag){ msg.style.color='#ef4444'; msg.textContent='Enter your $cashtag.'; return; }
-  const btn = document.getElementById('shop-submit-tag-btn2');
+  const btn = document.getElementById('shop-submit-tag-btn');
   btn.disabled = true; btn.textContent = 'SUBMITTING...';
   try{
     await db.collection('orders').doc(currentOrderId2).update({
@@ -6612,8 +6542,54 @@ async function submitCashTag2(){
   btn.disabled=false; btn.textContent='SUBMIT';
 }
 
-document.getElementById('shop-submit-tag-btn2')?.addEventListener('click', submitCashTag2);
-document.getElementById('shop-cashtag2')?.textContent && (document.getElementById('shop-cashtag2').textContent = '$DR3AMSTUDI0S');
+document.getElementById('shop-submit-tag-btn')?.addEventListener('click', submitCashTag2);
+
+// ── Approved orders panel with revoke ─────────────────────────
+function renderApprovedOrders(orders){
+  const list = document.getElementById('admin-approved-list');
+  if(!list) return;
+  if(!orders.length){
+    list.innerHTML = '<div style="color:var(--text-3);font-style:italic;font-size:.85rem">No approved orders yet.</div>';
+    return;
+  }
+  list.innerHTML = orders.map(o => `
+    <div style="background:var(--bg-dark);border:1px solid #22c55e44;border-radius:var(--r);padding:14px">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">
+        <span style="font-family:var(--font-m);font-size:.85rem;color:var(--gold)">${escHtml(o.orderId)}</span>
+        <span style="font-family:var(--font-d);font-size:.72rem;color:#22c55e">✅ Approved</span>
+      </div>
+      <div style="font-size:.82rem;color:var(--text-2);margin-bottom:2px">User: <strong>${escHtml(o.username||'')}</strong> · Tag: <strong>${escHtml(o.cashtag||'—')}</strong></div>
+      <div style="font-size:.75rem;color:var(--text-3);margin-bottom:10px">Product: ${escHtml(o.productLabel||o.product||'')} · Approved: ${o.approvedAt ? new Date(o.approvedAt).toLocaleString() : '—'}</div>
+      <button class="btn-ghost" style="border-color:#ef4444;color:#ef4444;width:auto;padding:7px 14px" onclick="revokeOrder('${o.orderId}')">🗑️ REVOKE & REMOVE</button>
+    </div>
+  `).join('');
+}
+
+async function revokeOrder(orderId){
+  if(!isAdminUser()){ toast('Not authorized.', 'error'); return; }
+  if(!confirm(`Revoke order ${orderId}? This permanently deletes it from the approved list.`)) return;
+  try{
+    await db.collection('orders').doc(orderId).delete();
+    toast(`Order ${orderId} revoked and removed.`, 'success', 4000);
+  }catch(e){ toast('Revoke failed: ' + e.message, 'error'); }
+}
+
+function listenToAdminOrders(){
+  if(!isAdminUser()) return;
+  document.getElementById('admin-orders-section').classList.remove('hidden');
+  document.getElementById('admin-approved-section').classList.remove('hidden');
+  if(adminOrdersListener) adminOrdersListener();
+
+  const unsub = db.collection('orders')
+    .onSnapshot(snap=>{
+      const orders = snap.docs.map(d=>d.data()).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+      renderAdminOrders(orders.filter(o=>o.status==='pending' && o.cashtag));
+      renderApprovedOrders(orders.filter(o=>o.status==='approved'));
+    }, err=>{
+      if(err.code !== 'permission-denied') console.warn('Admin orders listener error:', err.message);
+    });
+  adminOrdersListener = unsub;
+}
 
 // ── Gem shop purchases ────────────────────────────────────────
 async function buyGemsReal(gems, dollars){
@@ -6629,8 +6605,8 @@ async function buyGemsReal(gems, dollars){
       createdAt: new Date().toISOString(),
     });
     currentOrderId2 = orderId;
-    document.getElementById('shop-order-id2').textContent = orderId + '  (' + label + ')';
-    document.getElementById('shop-order-box2').classList.remove('hidden');
+    document.getElementById('shop-order-id').textContent = orderId + '  (' + label + ')';
+    document.getElementById('shop-order-box').classList.remove('hidden');
     toast(`Order created for ${label}! Send $${dollars} via Cash App then submit your $cashtag.`, 'success', 6000);
     // Jump to the Shop page to show the order box / cashtag submission
     showPage('shop');
