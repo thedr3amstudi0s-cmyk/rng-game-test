@@ -2201,31 +2201,36 @@ async function buyShopPet(petId){
 }
 
 // ============================================================
-// TRADE UP — Fixed Locked Copies Bug
+// TRADE UP — Complete Fixed Version
 // ============================================================
-function renderTradeUpPage() {
-  const groupsEl = document.getElementById('tradeup-groups');
-  const emptyEl = document.getElementById('tradeup-empty');
-  groupsEl.innerHTML = '';
-
-  const petGroups = {};
-
+function getTradeUpGroups() {
+  const groups = {};
   S.inventory.forEach(inv => {
     const item = getInvEffectiveItem(inv);
     if (!item || item.rarity !== 'pet') return;
 
-    if (!petGroups[item.id]) petGroups[item.id] = [];
-    petGroups[item.id].push(inv);
+    if (!groups[item.id]) groups[item.id] = [];
+    groups[item.id].push(inv);
   });
+  return groups;
+}
 
+function renderTradeUpPage() {
+  const groupsEl = document.getElementById('tradeup-groups');
+  const emptyEl = document.getElementById('tradeup-empty');
+  if (!groupsEl) return;
+
+  groupsEl.innerHTML = '';
+  const petGroups = getTradeUpGroups();
   let hasEligible = false;
 
   Object.keys(petGroups).forEach(petId => {
     const copies = petGroups[petId];
-    if (copies.length < 2) return; // need duplicates
+    if (copies.length < 2) return;
 
     const pet = getItem(petId);
-    const unlockedCount = copies.filter(c => !c.locked).length; // missing locked = treat as unlocked (old pets)
+    // Old pets without 'locked' field are considered unlocked
+    const unlockedCount = copies.filter(c => c.locked !== true).length;
 
     if (unlockedCount >= 2) hasEligible = true;
 
@@ -2234,17 +2239,17 @@ function renderTradeUpPage() {
     card.innerHTML = `
       <span class="tradeup-group-icon">${pet.icon}</span>
       <div class="tradeup-group-name">${pet.name}</div>
-      <div class="tradeup-group-count">${copies.length} copies (${unlockedCount} unlocked)</div>
+      <div class="tradeup-group-count">${copies.length} copies • ${unlockedCount} unlocked</div>
       <span class="tradeup-group-arrow">→</span>
     `;
 
-    card.addEventListener('click', () => {
+    card.onclick = () => {
       if (unlockedCount < 2) {
-        toast(`Need at least 2 unlocked copies of ${pet.name}. Some are locked — unlock them first.`, 'error');
+        toast(`Need 2 unlocked copies of ${pet.name}. Unlock some first!`, 'error', 4000);
         return;
       }
-      openTradeUpPanel(petId, copies);
-    });
+      openTradeUpPanel(petId, copies, unlockedCount);
+    };
 
     groupsEl.appendChild(card);
   });
@@ -2252,36 +2257,48 @@ function renderTradeUpPage() {
   emptyEl.classList.toggle('hidden', hasEligible);
 }
 
-function openTradeUpPanel(petId, copies) {
+function openTradeUpPanel(petId, allCopies, unlockedCount) {
   const panel = document.getElementById('tradeup-panel');
   const overlay = document.getElementById('tradeup-overlay');
 
   const pet = getItem(petId);
-  const unlockedCopies = copies.filter(c => !c.locked);
+  let sacrificeCount = 2;
 
   document.getElementById('tradeup-panel-flow').innerHTML = `
-    <div style="text-align:center">
-      <span style="font-size:3rem">${pet.icon}</span><br>
-      <strong>${pet.name}</strong>
-    </div>
+    <span style="font-size:3.5rem">${pet.icon}</span>
+    <div style="margin-top:8px;font-weight:700">${pet.name}</div>
   `;
 
-  document.getElementById('tradeup-panel-owned').textContent = `${unlockedCopies.length} unlocked copies available`;
+  document.getElementById('tradeup-panel-owned').innerHTML = `
+    You have <strong>${allCopies.length}</strong> total copies<br>
+    <strong style="color:#22c55e">${unlockedCount}</strong> unlocked and ready
+  `;
 
-  let count = 2; // default
-  document.getElementById('tradeup-count-val').textContent = count;
+  const countVal = document.getElementById('tradeup-count-val');
+  countVal.textContent = sacrificeCount;
 
-  document.getElementById('tradeup-count-minus').onclick = () => { if(count>2) count--; document.getElementById('tradeup-count-val').textContent=count; updateTradeUpChance(); };
-  document.getElementById('tradeup-count-plus').onclick = () => { if(count<unlockedCopies.length) count++; document.getElementById('tradeup-count-val').textContent=count; updateTradeUpChance(); };
+  document.getElementById('tradeup-count-minus').onclick = () => {
+    if (sacrificeCount > 2) sacrificeCount--;
+    countVal.textContent = sacrificeCount;
+    updateTradeUpChance(pet, sacrificeCount);
+  };
 
-  function updateTradeUpChance() {
-    const chance = Math.min(95, 30 + (count - 2) * 15); // example scaling
-    document.getElementById('tradeup-chance-display').innerHTML = `Success Chance: <span style="color:#22c55e">${chance}%</span>`;
+  document.getElementById('tradeup-count-plus').onclick = () => {
+    if (sacrificeCount < unlockedCount) sacrificeCount++;
+    countVal.textContent = sacrificeCount;
+    updateTradeUpChance(pet, sacrificeCount);
+  };
+
+  function updateTradeUpChance(p, count) {
+    const base = 25 + (count - 2) * 12;
+    const chance = Math.min(92, base);
+    document.getElementById('tradeup-chance-display').innerHTML = 
+      `Success Chance: <span style="color:#22c55e;font-size:1.4rem">${chance}%</span>`;
   }
-  updateTradeUpChance();
+  updateTradeUpChance(pet, sacrificeCount);
 
   document.getElementById('tradeup-btn-execute').onclick = async () => {
-    await executeTradeUp(petId, count, unlockedCopies);
+    await executeTradeUp(petId, sacrificeCount);
     panel.classList.add('hidden');
     overlay.classList.add('hidden');
   };
@@ -2290,44 +2307,68 @@ function openTradeUpPanel(petId, copies) {
   panel.classList.remove('hidden');
 }
 
-async function executeTradeUp(petId, count, availableCopies) {
+async function executeTradeUp(petId, sacrificeCount) {
   const pet = getItem(petId);
-  const toSacrifice = availableCopies.slice(0, count);
+  const groups = getTradeUpGroups();
+  const available = groups[petId] || [];
+  const toSacrifice = available.filter(c => c.locked !== true).slice(0, sacrificeCount);
 
-  // Remove sacrificed copies
+  if (toSacrifice.length < sacrificeCount) {
+    toast('Not enough unlocked copies!', 'error');
+    return;
+  }
+
+  // Remove sacrificed pets
   for (const copy of toSacrifice) {
     const idx = S.inventory.findIndex(i => i.uniqueId === copy.uniqueId);
-    if (idx > -1) S.inventory.splice(idx, 1);
+    if (idx !== -1) S.inventory.splice(idx, 1);
   }
 
   // Roll upgrade
-  const success = Math.random() < (0.3 + (count - 2) * 0.15);
-  let resultPet = pet;
+  const successChance = Math.min(92, 25 + (sacrificeCount - 2) * 12);
+  const success = Math.random() * 100 < successChance;
 
+  let resultPet = pet;
   if (success) {
-    // Upgrade to next tier (simple example)
-    if (pet.tier === 'normal') resultPet = getItem('p_gold_' + pet.id.split('_')[1]) || pet;
-    else if (pet.tier === 'gold') resultPet = getItem('p_diamond_' + pet.id.split('_')[1]) || pet;
-    else resultPet = pet; // max tier
+    // Simple upgrade chain (you can expand this)
+    if (!pet.tier || pet.tier === 'normal') resultPet = getItem(pet.id.replace('p_', 'p_gold_')) || pet;
+    else if (pet.tier === 'gold') resultPet = getItem(pet.id.replace('p_gold_', 'p_diamond_')) || pet;
   }
 
-  const newInv = { itemId: resultPet.id, uniqueId: genUID(), crateSource: 'tradeup', obtainedAt: new Date().toISOString() };
-  S.inventory.push(newInv);
+  const newInvItem = {
+    itemId: resultPet.id,
+    uniqueId: genUID(),
+    crateSource: 'tradeup',
+    obtainedAt: new Date().toISOString()
+  };
+
+  S.inventory.push(newInvItem);
 
   try {
     await db.collection('users').doc(S.user.uid).update({ inventory: S.inventory });
-    toast(success ? `🎉 Upgraded to ${resultPet.name}!` : `😔 Trade up failed. Copies consumed.`, success ? 'gold' : 'error');
+    
+    if (success) {
+      toast(`🎉 Successfully upgraded to ${resultPet.name}!`, 'gold', 5000);
+      if (resultPet.rarity === 'divine' || resultPet.rarity === 'mythic') {
+        showUltraOverlay(resultPet);
+      }
+    } else {
+      toast(`😔 Trade up failed. ${sacrificeCount} copies consumed.`, 'error', 4000);
+    }
+
     renderTradeUpPage();
     renderInventory();
   } catch (e) {
-    toast('Save error', 'error');
+    toast('Failed to save trade up', 'error');
   }
 }
 
+// Close button
 document.getElementById('tradeup-panel-close').addEventListener('click', () => {
   document.getElementById('tradeup-panel').classList.add('hidden');
   document.getElementById('tradeup-overlay').classList.add('hidden');
 });
+
 // Which crate/bucket a pet id belongs to in PETS_BY_CRATE (used for eligibility + labeling)
 function findPetBucket(itemId){
   for(const [bucket, pets] of Object.entries(PETS_BY_CRATE)){
