@@ -6120,6 +6120,13 @@ const DEFAULT_PRODUCTS = [
     reward: { type: 'autoroll' },
     active: true,
   },
+  {
+    id: 'premium_pass',
+    label: '⭐ PREMIUM BATTLE PASS — Unlock all Premium tier rewards for this season!',
+    priceLabel: '$15.00/month',
+    reward: { type: 'premiumpass' },
+    active: true,
+  },
 ];
 
 function isAdminUser(){
@@ -6308,9 +6315,25 @@ async function approveOrder(orderId){
     const order = orderSnap.data();
     if(order.status !== 'pending'){ toast('Order is not pending.', 'error'); return; }
 
+    if(order.reward?.type === 'premiumpass'){
+      // Grant premium pass directly to the user's profile
+      const seasonKey = getBpSeasonKey();
+      const userRef = db.collection('users').doc(order.uid);
+      const update = {};
+      update[`battlePass.${seasonKey}.premium`] = true;
+      await userRef.update(update);
+      await orderRef.update({
+        status: 'approved',
+        approvedAt: new Date().toISOString(),
+        approvedBy: S.user.uid,
+        code: 'PREMIUM_GRANTED',
+      });
+      toast(`✅ Premium Pass granted to ${order.username}!`, 'success', 5000);
+      return;
+    }
+
     // Generate a fresh one-time code carrying this order's reward
     const code = await makeCode(order.reward);
-
     await orderRef.update({
       status: 'approved',
       code,
@@ -6755,7 +6778,44 @@ function getNextPetSlotCost(){
 // BATTLE PASS — Seasonal XP & Reward Track
 // ============================================================
 
-// XP per crate open (scales by crate price tier)
+// XP required to reach a given level (scales up — each level needs 10% more than the last)
+function getBpXpForLevel(targetLevel){
+  let total = 0;
+  for(let lv = 1; lv < targetLevel; lv++){
+    total += Math.floor(1000 * Math.pow(1.10, lv - 1));
+  }
+  return total;
+}
+// XP needed for the NEXT level from current total
+function getBpXpNeededForNext(level){
+  return Math.floor(1000 * Math.pow(1.10, level - 1));
+}
+
+function getBpLevel(totalXp){
+  if(!totalXp) return 1;
+  let level = 1;
+  let xpRemaining = totalXp;
+  while(level < BP_MAX_LEVEL){
+    const needed = getBpXpNeededForNext(level);
+    if(xpRemaining < needed) break;
+    xpRemaining -= needed;
+    level++;
+  }
+  return level;
+}
+function getBpXpIntoLevel(totalXp){
+  if(!totalXp) return 0;
+  let level = 1, rem = totalXp;
+  while(level < BP_MAX_LEVEL){
+    const needed = getBpXpNeededForNext(level);
+    if(rem < needed) return rem;
+    rem -= needed;
+    level++;
+  }
+  return 0;
+}
+
+// XP per crate open — scales with crate price
 function getBpXpForCrate(crate){
   if(!crate) return 0;
   const p = crate.price || 0;
@@ -6767,85 +6827,7 @@ function getBpXpForCrate(crate){
   return 15;
 }
 
-const BP_XP_PER_LEVEL = 1000;
-const BP_MAX_LEVEL = 50;
-
-function getBpLevel(xp){ return Math.min(BP_MAX_LEVEL, Math.floor((xp||0) / BP_XP_PER_LEVEL) + 1); }
-function getBpXpIntoLevel(xp){ return (xp||0) % BP_XP_PER_LEVEL; }
-
-// Season = year-month key e.g. "2025-07"
-function getBpSeasonKey(){
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-}
-
-// All seasonal configs — extend as needed
-const BP_SEASONS = {
-  '2025-07': {
-    name: '🎆 Independence Season', subtitle: 'July — Freedom & Fireworks',
-    color: '#ef4444', icon: '🎆',
-    pets: [
-      {id:'bp_jul_1', name:'Freedom Eagle', icon:'🦅', rarity:'pet', value:5000000, perk:'luck', perkValue:25, perkName:'Patriot\'s Luck', perkDesc:'+25% better odds on next open after a luck boost'},
-      {id:'bp_jul_2', name:'Firework Phoenix', icon:'🎆', rarity:'pet', value:8000000, perk:'sellboost', perkValue:30, perkName:'Gold Rush', perkDesc:'+30% coins when selling'},
-      {id:'bp_jul_3', name:'Liberty Tiger', icon:'🐯', rarity:'pet', value:15000000, perk:'gemfind', perkValue:40, perkName:'Treasure Hunter', perkDesc:'40% chance to find bonus gems on each open', premium:true},
-    ],
-  },
-  '2025-08': {
-    name: '🎒 Back to School Season', subtitle: 'August — Knowledge & Growth',
-    color: '#3b82f6', icon: '🎒',
-    pets: [
-      {id:'bp_aug_1', name:'Scholar Fox', icon:'🦊', rarity:'pet', value:5000000, perk:'discount', perkValue:15, perkName:'Student Deal', perkDesc:'-15% off all crate prices'},
-      {id:'bp_aug_2', name:'Bookworm Cat', icon:'🐱', rarity:'pet', value:8000000, perk:'pity', perkValue:20, perkName:'Study Hard', perkDesc:'-20% fewer opens for guaranteed pet'},
-      {id:'bp_aug_3', name:'Genius Owl', icon:'🦉', rarity:'pet', value:18000000, perk:'luck', perkValue:50, perkName:'Straight A\'s', perkDesc:'+50% better odds on next open after a luck boost', premium:true},
-    ],
-  },
-  '2025-09': {
-    name: '🍂 Fall Harvest Season', subtitle: 'September — Autumn & Change',
-    color: '#f97316', icon: '🍂',
-    pets: [
-      {id:'bp_sep_1', name:'Harvest Squirrel', icon:'🐿️', rarity:'pet', value:5000000, perk:'sellboost', perkValue:20, perkName:'Harvest Bonus', perkDesc:'+20% coins when selling'},
-      {id:'bp_sep_2', name:'Autumn Deer', icon:'🦌', rarity:'pet', value:9000000, perk:'discount', perkValue:20, perkName:'Leaf Deal', perkDesc:'-20% off all crate prices'},
-      {id:'bp_sep_3', name:'Fall Spirit Bear', icon:'🐻', rarity:'pet', value:20000000, perk:'gemfind', perkValue:50, perkName:'Acorn Hoard', perkDesc:'50% chance to find bonus gems on each open', premium:true},
-    ],
-  },
-  '2025-10': {
-    name: '🎃 Halloween Season', subtitle: 'October — Spooks & Tricks',
-    color: '#f97316', icon: '🎃',
-    pets: [
-      {id:'bp_oct_1', name:'Pumpkin Cat', icon:'🐱', rarity:'pet', value:6000000, perk:'luck', perkValue:20, perkName:'Trick Luck', perkDesc:'+20% better odds on next open after a luck boost'},
-      {id:'bp_oct_2', name:'Ghost Wolf', icon:'🐺', rarity:'pet', value:10000000, perk:'speed', perkValue:30, perkName:'Haunt Dash', perkDesc:'Spin animation is 30% faster'},
-      {id:'bp_oct_3', name:'Witch\'s Raven', icon:'🦅', rarity:'pet', value:22000000, perk:'pity', perkValue:40, perkName:'Dark Pact', perkDesc:'-40% fewer opens for guaranteed pet', premium:true},
-    ],
-  },
-  '2025-11': {
-    name: '🦃 Thanksgiving Season', subtitle: 'November — Gratitude & Plenty',
-    color: '#b45309', icon: '🦃',
-    pets: [
-      {id:'bp_nov_1', name:'Grateful Turkey', icon:'🦃', rarity:'pet', value:6000000, perk:'sellboost', perkValue:25, perkName:'Thankful Harvest', perkDesc:'+25% coins when selling'},
-      {id:'bp_nov_2', name:'Cornucopia Bunny', icon:'🐰', rarity:'pet', value:11000000, perk:'discount', perkValue:25, perkName:'Harvest Savings', perkDesc:'-25% off all crate prices'},
-      {id:'bp_nov_3', name:'Pilgrim Eagle', icon:'🦅', rarity:'pet', value:25000000, perk:'luck', perkValue:60, perkName:'Abundance', perkDesc:'+60% better odds on next open after a luck boost', premium:true},
-    ],
-  },
-  '2025-12': {
-    name: '🎄 Winter Season', subtitle: 'December — Giving & Wonder',
-    color: '#22c55e', icon: '🎄',
-    pets: [
-      {id:'bp_dec_1', name:'Snow Reindeer', icon:'🦌', rarity:'pet', value:7000000, perk:'gemfind', perkValue:25, perkName:'Gift Finder', perkDesc:'25% chance to find bonus gems on each open'},
-      {id:'bp_dec_2', name:'Snowflake Fox', icon:'🦊', rarity:'pet', value:12000000, perk:'speed', perkValue:40, perkName:'Blizzard Rush', perkDesc:'Spin animation is 40% faster'},
-      {id:'bp_dec_3', name:'Frostfire Dragon', icon:'🐉', rarity:'pet', value:30000000, perk:'sellboost', perkValue:60, perkName:'Winter Jackpot', perkDesc:'+60% coins when selling', premium:true},
-    ],
-  },
-};
-// Fallback for months without a defined season
-function getBpSeason(){
-  const key = getBpSeasonKey();
-  return BP_SEASONS[key] || {
-    name: '🎖️ Battle Pass', subtitle: 'Earn XP by opening crates.',
-    color: '#a855f7', icon: '🎖️', pets: [],
-  };
-}
-
-// Build 50-level reward track for the current season
+// Build a track with EXACTLY ONE reward per level per track (free / premium)
 function buildBpTrack(season){
   const track = [];
   const pets = season.pets || [];
