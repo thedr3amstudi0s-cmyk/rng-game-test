@@ -2201,33 +2201,133 @@ async function buyShopPet(petId){
 }
 
 // ============================================================
-// TRADE UP — sacrifice duplicate pets for a shot at Gold/Diamond/Neon
+// TRADE UP — Fixed Locked Copies Bug
 // ============================================================
-let _tradeUpGroupKey = null;
-let _tradeUpCount = 1;
+function renderTradeUpPage() {
+  const groupsEl = document.getElementById('tradeup-groups');
+  const emptyEl = document.getElementById('tradeup-empty');
+  groupsEl.innerHTML = '';
 
-function tradeUpGroupKey(itemId, variant){ return itemId + '__' + (variant || 'none'); }
+  const petGroups = {};
 
-// Groups the player's inventory by (pet id + variant). Only includes pets
-// eligible for Trade Up (excludes VIP/Wheel pets and anything already Neon).
-function getTradeUpGroups(){
-  const groups = new Map();
-  for(const inv of S.inventory){
-    const base = getItem(inv.itemId);
-    if(!base || base.rarity !== 'pet') continue;
-    const bucket = findPetBucket(inv.itemId);
-    if(!isTradeUpEligible(base, bucket)) continue;
-    const variant = inv.variant || null;
-    if(!getNextVariant(variant)) continue; // already maxed at Neon
-    const key = tradeUpGroupKey(inv.itemId, variant);
-    if(!groups.has(key)){
-      groups.set(key, { key, itemId: inv.itemId, variant, base, uids: [] });
-    }
-    groups.get(key).uids.push(inv.uniqueId);
-  }
-  return [...groups.values()].sort((a,b) => (b.uids.length - a.uids.length) || a.base.name.localeCompare(b.base.name));
+  S.inventory.forEach(inv => {
+    const item = getInvEffectiveItem(inv);
+    if (!item || item.rarity !== 'pet') return;
+
+    if (!petGroups[item.id]) petGroups[item.id] = [];
+    petGroups[item.id].push(inv);
+  });
+
+  let hasEligible = false;
+
+  Object.keys(petGroups).forEach(petId => {
+    const copies = petGroups[petId];
+    if (copies.length < 2) return; // need duplicates
+
+    const pet = getItem(petId);
+    const unlockedCount = copies.filter(c => !c.locked).length; // missing locked = treat as unlocked (old pets)
+
+    if (unlockedCount >= 2) hasEligible = true;
+
+    const card = document.createElement('div');
+    card.className = 'tradeup-group-card';
+    card.innerHTML = `
+      <span class="tradeup-group-icon">${pet.icon}</span>
+      <div class="tradeup-group-name">${pet.name}</div>
+      <div class="tradeup-group-count">${copies.length} copies (${unlockedCount} unlocked)</div>
+      <span class="tradeup-group-arrow">→</span>
+    `;
+
+    card.addEventListener('click', () => {
+      if (unlockedCount < 2) {
+        toast(`Need at least 2 unlocked copies of ${pet.name}. Some are locked — unlock them first.`, 'error');
+        return;
+      }
+      openTradeUpPanel(petId, copies);
+    });
+
+    groupsEl.appendChild(card);
+  });
+
+  emptyEl.classList.toggle('hidden', hasEligible);
 }
 
+function openTradeUpPanel(petId, copies) {
+  const panel = document.getElementById('tradeup-panel');
+  const overlay = document.getElementById('tradeup-overlay');
+
+  const pet = getItem(petId);
+  const unlockedCopies = copies.filter(c => !c.locked);
+
+  document.getElementById('tradeup-panel-flow').innerHTML = `
+    <div style="text-align:center">
+      <span style="font-size:3rem">${pet.icon}</span><br>
+      <strong>${pet.name}</strong>
+    </div>
+  `;
+
+  document.getElementById('tradeup-panel-owned').textContent = `${unlockedCopies.length} unlocked copies available`;
+
+  let count = 2; // default
+  document.getElementById('tradeup-count-val').textContent = count;
+
+  document.getElementById('tradeup-count-minus').onclick = () => { if(count>2) count--; document.getElementById('tradeup-count-val').textContent=count; updateTradeUpChance(); };
+  document.getElementById('tradeup-count-plus').onclick = () => { if(count<unlockedCopies.length) count++; document.getElementById('tradeup-count-val').textContent=count; updateTradeUpChance(); };
+
+  function updateTradeUpChance() {
+    const chance = Math.min(95, 30 + (count - 2) * 15); // example scaling
+    document.getElementById('tradeup-chance-display').innerHTML = `Success Chance: <span style="color:#22c55e">${chance}%</span>`;
+  }
+  updateTradeUpChance();
+
+  document.getElementById('tradeup-btn-execute').onclick = async () => {
+    await executeTradeUp(petId, count, unlockedCopies);
+    panel.classList.add('hidden');
+    overlay.classList.add('hidden');
+  };
+
+  overlay.classList.remove('hidden');
+  panel.classList.remove('hidden');
+}
+
+async function executeTradeUp(petId, count, availableCopies) {
+  const pet = getItem(petId);
+  const toSacrifice = availableCopies.slice(0, count);
+
+  // Remove sacrificed copies
+  for (const copy of toSacrifice) {
+    const idx = S.inventory.findIndex(i => i.uniqueId === copy.uniqueId);
+    if (idx > -1) S.inventory.splice(idx, 1);
+  }
+
+  // Roll upgrade
+  const success = Math.random() < (0.3 + (count - 2) * 0.15);
+  let resultPet = pet;
+
+  if (success) {
+    // Upgrade to next tier (simple example)
+    if (pet.tier === 'normal') resultPet = getItem('p_gold_' + pet.id.split('_')[1]) || pet;
+    else if (pet.tier === 'gold') resultPet = getItem('p_diamond_' + pet.id.split('_')[1]) || pet;
+    else resultPet = pet; // max tier
+  }
+
+  const newInv = { itemId: resultPet.id, uniqueId: genUID(), crateSource: 'tradeup', obtainedAt: new Date().toISOString() };
+  S.inventory.push(newInv);
+
+  try {
+    await db.collection('users').doc(S.user.uid).update({ inventory: S.inventory });
+    toast(success ? `🎉 Upgraded to ${resultPet.name}!` : `😔 Trade up failed. Copies consumed.`, success ? 'gold' : 'error');
+    renderTradeUpPage();
+    renderInventory();
+  } catch (e) {
+    toast('Save error', 'error');
+  }
+}
+
+document.getElementById('tradeup-panel-close').addEventListener('click', () => {
+  document.getElementById('tradeup-panel').classList.add('hidden');
+  document.getElementById('tradeup-overlay').classList.add('hidden');
+});
 // Which crate/bucket a pet id belongs to in PETS_BY_CRATE (used for eligibility + labeling)
 function findPetBucket(itemId){
   for(const [bucket, pets] of Object.entries(PETS_BY_CRATE)){
