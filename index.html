@@ -219,6 +219,36 @@ input,select{font-family:inherit;color:inherit;border:none;outline:none;backgrou
 @media(max-width:900px){.shelf-row{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:600px){.shelf-row{grid-template-columns:repeat(2,1fr);gap:8px;} .pet-shelf-wrap{padding:14px 10px 8px;}}
 
+/* BATTLE PASS */
+.bp-header-card{display:flex;align-items:center;gap:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;margin-bottom:14px;flex-wrap:wrap;}
+.bp-level-badge{font-family:var(--font-d);font-size:1.4rem;font-weight:900;color:var(--gold);min-width:60px;text-align:center;text-shadow:0 0 12px rgba(245,158,11,.4);}
+.bp-xp-track{height:12px;background:var(--bg-dark);border-radius:8px;overflow:hidden;border:1px solid var(--border);}
+.bp-xp-fill{height:100%;background:linear-gradient(90deg,#a855f7,#3b82f6);border-radius:8px;transition:width .6s cubic-bezier(.34,1.56,.64,1);}
+.bp-premium-badge{background:linear-gradient(135deg,var(--gold),#f97316);color:#000;font-family:var(--font-d);font-size:.7rem;font-weight:900;letter-spacing:.1em;padding:5px 12px;border-radius:20px;}
+.bp-buy-cta{display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(249,115,22,.08));border:2px solid var(--gold);border-radius:var(--rl);padding:16px 18px;margin-bottom:20px;flex-wrap:wrap;}
+.bp-track{display:flex;flex-direction:column;gap:0;}
+.bp-tier{display:grid;grid-template-columns:52px 1fr 1fr;align-items:center;gap:0;position:relative;}
+.bp-tier-num{font-family:var(--font-d);font-size:.72rem;font-weight:900;text-align:center;color:var(--text-3);padding:12px 0;position:relative;z-index:1;}
+.bp-tier-num.bp-tier-current{color:var(--gold);}
+.bp-tier-num.bp-tier-done{color:#22c55e;}
+.bp-spine{position:absolute;left:25px;top:0;bottom:0;width:2px;background:var(--border);z-index:0;}
+.bp-spine-done{background:linear-gradient(#22c55e,#22c55e);}
+.bp-reward-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin:6px 6px 6px 0;transition:var(--t);}
+.bp-reward-card.bp-claimed{border-color:#22c55e44;opacity:.7;}
+.bp-reward-card.bp-locked{opacity:.5;}
+.bp-reward-card.bp-premium-card{border-color:#f59e0b66;background:linear-gradient(135deg,rgba(245,158,11,.08),var(--bg-card));}
+.bp-reward-card.bp-premium-card.bp-locked{border-color:#f59e0b22;}
+.bp-reward-icon{font-size:1.5rem;display:block;margin-bottom:3px;}
+.bp-reward-label{font-family:var(--font-d);font-size:.6rem;color:var(--text-2);margin-bottom:2px;letter-spacing:.04em;}
+.bp-reward-val{font-family:var(--font-d);font-size:.65rem;font-weight:700;color:var(--text-1);}
+.bp-reward-tag{display:inline-block;font-size:.52rem;font-family:var(--font-d);font-weight:700;padding:1px 6px;border-radius:10px;margin-bottom:4px;}
+.bp-tag-free{background:#22c55e22;color:#22c55e;}
+.bp-tag-premium{background:#f59e0b22;color:#f59e0b;}
+.bp-claim-btn{margin-top:6px;width:100%;padding:5px 0;border-radius:6px;border:1px solid #22c55e;background:transparent;color:#22c55e;font-family:var(--font-d);font-size:.6rem;font-weight:700;cursor:pointer;letter-spacing:.06em;transition:.15s;}
+.bp-claim-btn:hover{background:#22c55e22;}
+.bp-claim-btn:disabled{opacity:.4;cursor:default;}
+@media(max-width:600px){.bp-tier{grid-template-columns:38px 1fr 1fr;} .bp-buy-cta{flex-direction:column;}}
+
 /* TRADE UP */
 .tradeup-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
 .tradeup-group-card{
@@ -787,6 +817,7 @@ input,select{font-family:inherit;color:inherit;border:none;outline:none;backgrou
       <button class="nav-item" data-page="wheel"><span class="nav-icon">🎰</span><span class="nav-label">WHEEL</span></button>
       <button class="nav-item" data-page="shop"><span class="nav-icon">🛒</span><span class="nav-label">SHOP</span></button>
       <button class="nav-item" data-page="gems"><span class="nav-icon">💎</span><span class="nav-label">GEMS</span></button>
+      <button class="nav-item" data-page="battlepass"><span class="nav-icon">🎖️</span><span class="nav-label">PASS</span></button>
       <button class="nav-item" data-page="settings"><span class="nav-icon">⚙️</span><span class="nav-label">SETTINGS</span></button>
     </nav>
 
@@ -1257,6 +1288,42 @@ input,select{font-family:inherit;color:inherit;border:none;outline:none;backgrou
             <button class="btn-primary" id="petslot-purchase-btn" style="width:auto;padding:9px 18px;white-space:nowrap;background:linear-gradient(135deg,#a855f7,#7c3aed)" onclick="buyPetSlot()">💎 —</button>
           </div>
         </div>
+      </section>
+
+      <!-- ACHIEVEMENTS -->
+      <!-- BATTLE PASS -->
+      <section class="page" id="page-battlepass">
+        <div class="page-header">
+          <h2 id="bp-season-title">🎖️ BATTLE PASS</h2>
+          <p id="bp-season-subtitle">Earn XP by opening crates and climb 50 levels. Premium Pass holders unlock exclusive pets, gems, and coins at every tier.</p>
+        </div>
+
+        <!-- XP bar + level + premium status -->
+        <div class="bp-header-card" id="bp-header-card">
+          <div class="bp-level-badge" id="bp-level-badge">LV 1</div>
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+              <span style="font-family:var(--font-d);font-size:.72rem;color:var(--text-2)">SEASON XP</span>
+              <span style="font-family:var(--font-m);font-size:.72rem;color:var(--text-3)" id="bp-xp-label">0 / 1000 XP to next level</span>
+            </div>
+            <div class="bp-xp-track">
+              <div class="bp-xp-fill" id="bp-xp-fill" style="width:0%"></div>
+            </div>
+          </div>
+          <div id="bp-premium-badge" class="bp-premium-badge hidden">⭐ PREMIUM</div>
+        </div>
+
+        <!-- Buy premium CTA (shown if not premium) -->
+        <div id="bp-buy-cta" class="bp-buy-cta">
+          <div>
+            <div style="font-family:var(--font-d);font-size:.9rem;font-weight:900;color:var(--gold);margin-bottom:4px">⭐ UPGRADE TO PREMIUM PASS</div>
+            <div style="font-size:.8rem;color:var(--text-2)">Unlock every Premium reward — exclusive seasonal pets, tons of gems &amp; coins — for just <strong>$15/month</strong>.</div>
+          </div>
+          <button class="btn-primary" style="background:linear-gradient(135deg,var(--gold),#f97316);white-space:nowrap;width:auto;padding:10px 22px" onclick="buyPremiumPass()">GET PREMIUM — $15</button>
+        </div>
+
+        <!-- Reward track -->
+        <div class="bp-track" id="bp-track"></div>
       </section>
 
       <!-- ACHIEVEMENTS -->
@@ -2981,6 +3048,7 @@ function showPage(id){
   }
   if(id==='shop'){ renderShopProducts2(); }
   if(id==='gems'){ updateGemDisplay(); renderRebirthPanel(); updatePetSlotPurchaseCard(); }
+  if(id==='battlepass'){ renderBattlePass(); }
   if(id==='petshop'){ renderPetShop(); startShopTimer(); }
   if(id==='tradeup'){ renderTradeUpPage(); } else { closeTradeUpPanel(); }
   if(id==='inventory') renderInventory();
@@ -4219,6 +4287,7 @@ document.getElementById('btn-open-crate').addEventListener('click', async () => 
   S.profile.luckCoinsPerCrate[crate.id] = (S.profile.luckCoinsPerCrate[crate.id] || 0) + price;
   checkLuckMilestone(crate);
   maybeGrantGemFind();
+  grantBpXp(crate);
 
   // Pity tracking for top-5 crates
   if(PITY_CRATES.includes(crate.id)){
@@ -6162,25 +6231,51 @@ function renderMyOrders(orders){
   const list = document.getElementById('shop-status-list');
   if(!list) return;
   if(!orders.length){ list.innerHTML = ''; return; }
+
+  const hidden = JSON.parse(localStorage.getItem('hiddenOrders')||'[]');
+  const visible = orders.filter(o => !hidden.includes(o.orderId));
+  const hiddenCount = orders.length - visible.length;
+
   const statusColor = { pending: 'var(--gold)', approved: '#22c55e', rejected: '#ef4444' };
   const statusLabel = { pending: '⏳ Pending review', approved: '✅ Approved', rejected: '❌ Rejected' };
 
-  list.innerHTML = orders.map(o => `
+  list.innerHTML = (visible.length ? visible.map(o => `
     <div style="background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
         <span style="font-family:var(--font-m);font-size:.8rem;color:var(--text-2)">${escHtml(o.orderId)}</span>
-        <span style="font-family:var(--font-d);font-size:.72rem;color:${statusColor[o.status]||'var(--text-2)'}">${statusLabel[o.status]||o.status}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:var(--font-d);font-size:.72rem;color:${statusColor[o.status]||'var(--text-2)'}">${statusLabel[o.status]||o.status}</span>
+          <button onclick="hideOrder('${o.orderId}')" title="Hide this order" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:.8rem;padding:0 2px;line-height:1" title="Hide from list">✕</button>
+        </div>
       </div>
       ${o.status === 'approved' && o.code ? `
         <div style="margin-top:8px;font-family:var(--font-m);font-size:.85rem;color:var(--gold)">
-          Your code: <strong>${escHtml(o.code)}</strong> — paste it into Redeem Code below!
+          Your code: <strong>${escHtml(o.code)}</strong> — redeem it in Settings!
         </div>` : ''}
       ${o.status === 'rejected' ? `
         <div style="margin-top:6px;font-size:.78rem;color:var(--text-3)">
           Payment couldn't be verified. Contact the admin if you believe this is an error.
         </div>` : ''}
     </div>
-  `).join('');
+  `).join('') : '') +
+  (hiddenCount > 0 ? `<div style="font-size:.75rem;color:var(--text-3);margin-top:4px"><button onclick="showAllOrders()" style="background:none;border:none;color:var(--text-3);cursor:pointer;text-decoration:underline;font-size:.75rem">Show ${hiddenCount} hidden order${hiddenCount===1?'':'s'}</button></div>` : '');
+}
+
+function hideOrder(orderId){
+  const hidden = JSON.parse(localStorage.getItem('hiddenOrders')||'[]');
+  if(!hidden.includes(orderId)) hidden.push(orderId);
+  localStorage.setItem('hiddenOrders', JSON.stringify(hidden));
+  // Re-render without re-fetching
+  const unsub = db.collection('orders').where('uid','==',S.user.uid).get()
+    .then(snap => renderMyOrders(snap.docs.map(d=>d.data()).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''))));
+}
+
+function showAllOrders(){
+  localStorage.setItem('hiddenOrders', '[]');
+  const el = document.getElementById('shop-status-list');
+  if(el) el.querySelector('button[onclick^="showAll"]')?.click();
+  db.collection('orders').where('uid','==',S.user?.uid).get()
+    .then(snap => renderMyOrders(snap.docs.map(d=>d.data()).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''))));
 }
 
 function listenToMyOrders(){
@@ -6654,6 +6749,298 @@ function getPetSlotCount(){ return Math.max(1, Math.min(PET_SLOT_FIELDS.length, 
 function getNextPetSlotCost(){
   const cur = getPetSlotCount();
   return cur < PET_SLOT_FIELDS.length ? PET_SLOT_PRICES[cur] : null; // cost to go from `cur` -> `cur+1`
+}
+
+// ============================================================
+// BATTLE PASS — Seasonal XP & Reward Track
+// ============================================================
+
+// XP per crate open (scales by crate price tier)
+function getBpXpForCrate(crate){
+  if(!crate) return 0;
+  const p = crate.price || 0;
+  if(p >= 4000000) return 500;
+  if(p >= 2000000) return 300;
+  if(p >= 500000)  return 150;
+  if(p >= 100000)  return 75;
+  if(p >= 10000)   return 35;
+  return 15;
+}
+
+const BP_XP_PER_LEVEL = 1000;
+const BP_MAX_LEVEL = 50;
+
+function getBpLevel(xp){ return Math.min(BP_MAX_LEVEL, Math.floor((xp||0) / BP_XP_PER_LEVEL) + 1); }
+function getBpXpIntoLevel(xp){ return (xp||0) % BP_XP_PER_LEVEL; }
+
+// Season = year-month key e.g. "2025-07"
+function getBpSeasonKey(){
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+}
+
+// All seasonal configs — extend as needed
+const BP_SEASONS = {
+  '2025-07': {
+    name: '🎆 Independence Season', subtitle: 'July — Freedom & Fireworks',
+    color: '#ef4444', icon: '🎆',
+    pets: [
+      {id:'bp_jul_1', name:'Freedom Eagle', icon:'🦅', rarity:'pet', value:5000000, perk:'luck', perkValue:25, perkName:'Patriot\'s Luck', perkDesc:'+25% better odds on next open after a luck boost'},
+      {id:'bp_jul_2', name:'Firework Phoenix', icon:'🎆', rarity:'pet', value:8000000, perk:'sellboost', perkValue:30, perkName:'Gold Rush', perkDesc:'+30% coins when selling'},
+      {id:'bp_jul_3', name:'Liberty Tiger', icon:'🐯', rarity:'pet', value:15000000, perk:'gemfind', perkValue:40, perkName:'Treasure Hunter', perkDesc:'40% chance to find bonus gems on each open', premium:true},
+    ],
+  },
+  '2025-08': {
+    name: '🎒 Back to School Season', subtitle: 'August — Knowledge & Growth',
+    color: '#3b82f6', icon: '🎒',
+    pets: [
+      {id:'bp_aug_1', name:'Scholar Fox', icon:'🦊', rarity:'pet', value:5000000, perk:'discount', perkValue:15, perkName:'Student Deal', perkDesc:'-15% off all crate prices'},
+      {id:'bp_aug_2', name:'Bookworm Cat', icon:'🐱', rarity:'pet', value:8000000, perk:'pity', perkValue:20, perkName:'Study Hard', perkDesc:'-20% fewer opens for guaranteed pet'},
+      {id:'bp_aug_3', name:'Genius Owl', icon:'🦉', rarity:'pet', value:18000000, perk:'luck', perkValue:50, perkName:'Straight A\'s', perkDesc:'+50% better odds on next open after a luck boost', premium:true},
+    ],
+  },
+  '2025-09': {
+    name: '🍂 Fall Harvest Season', subtitle: 'September — Autumn & Change',
+    color: '#f97316', icon: '🍂',
+    pets: [
+      {id:'bp_sep_1', name:'Harvest Squirrel', icon:'🐿️', rarity:'pet', value:5000000, perk:'sellboost', perkValue:20, perkName:'Harvest Bonus', perkDesc:'+20% coins when selling'},
+      {id:'bp_sep_2', name:'Autumn Deer', icon:'🦌', rarity:'pet', value:9000000, perk:'discount', perkValue:20, perkName:'Leaf Deal', perkDesc:'-20% off all crate prices'},
+      {id:'bp_sep_3', name:'Fall Spirit Bear', icon:'🐻', rarity:'pet', value:20000000, perk:'gemfind', perkValue:50, perkName:'Acorn Hoard', perkDesc:'50% chance to find bonus gems on each open', premium:true},
+    ],
+  },
+  '2025-10': {
+    name: '🎃 Halloween Season', subtitle: 'October — Spooks & Tricks',
+    color: '#f97316', icon: '🎃',
+    pets: [
+      {id:'bp_oct_1', name:'Pumpkin Cat', icon:'🐱', rarity:'pet', value:6000000, perk:'luck', perkValue:20, perkName:'Trick Luck', perkDesc:'+20% better odds on next open after a luck boost'},
+      {id:'bp_oct_2', name:'Ghost Wolf', icon:'🐺', rarity:'pet', value:10000000, perk:'speed', perkValue:30, perkName:'Haunt Dash', perkDesc:'Spin animation is 30% faster'},
+      {id:'bp_oct_3', name:'Witch\'s Raven', icon:'🦅', rarity:'pet', value:22000000, perk:'pity', perkValue:40, perkName:'Dark Pact', perkDesc:'-40% fewer opens for guaranteed pet', premium:true},
+    ],
+  },
+  '2025-11': {
+    name: '🦃 Thanksgiving Season', subtitle: 'November — Gratitude & Plenty',
+    color: '#b45309', icon: '🦃',
+    pets: [
+      {id:'bp_nov_1', name:'Grateful Turkey', icon:'🦃', rarity:'pet', value:6000000, perk:'sellboost', perkValue:25, perkName:'Thankful Harvest', perkDesc:'+25% coins when selling'},
+      {id:'bp_nov_2', name:'Cornucopia Bunny', icon:'🐰', rarity:'pet', value:11000000, perk:'discount', perkValue:25, perkName:'Harvest Savings', perkDesc:'-25% off all crate prices'},
+      {id:'bp_nov_3', name:'Pilgrim Eagle', icon:'🦅', rarity:'pet', value:25000000, perk:'luck', perkValue:60, perkName:'Abundance', perkDesc:'+60% better odds on next open after a luck boost', premium:true},
+    ],
+  },
+  '2025-12': {
+    name: '🎄 Winter Season', subtitle: 'December — Giving & Wonder',
+    color: '#22c55e', icon: '🎄',
+    pets: [
+      {id:'bp_dec_1', name:'Snow Reindeer', icon:'🦌', rarity:'pet', value:7000000, perk:'gemfind', perkValue:25, perkName:'Gift Finder', perkDesc:'25% chance to find bonus gems on each open'},
+      {id:'bp_dec_2', name:'Snowflake Fox', icon:'🦊', rarity:'pet', value:12000000, perk:'speed', perkValue:40, perkName:'Blizzard Rush', perkDesc:'Spin animation is 40% faster'},
+      {id:'bp_dec_3', name:'Frostfire Dragon', icon:'🐉', rarity:'pet', value:30000000, perk:'sellboost', perkValue:60, perkName:'Winter Jackpot', perkDesc:'+60% coins when selling', premium:true},
+    ],
+  },
+};
+// Fallback for months without a defined season
+function getBpSeason(){
+  const key = getBpSeasonKey();
+  return BP_SEASONS[key] || {
+    name: '🎖️ Battle Pass', subtitle: 'Earn XP by opening crates.',
+    color: '#a855f7', icon: '🎖️', pets: [],
+  };
+}
+
+// Build 50-level reward track for the current season
+function buildBpTrack(season){
+  const track = [];
+  const pets = season.pets || [];
+  // pet drops at levels 10, 25, 50 (free), and 15, 35 (premium)
+  const petLevels   = {10:pets[0], 25:pets[1]};
+  const premLevels  = {15:pets[2]};
+
+  for(let lv = 1; lv <= BP_MAX_LEVEL; lv++){
+    const free = [], prem = [];
+
+    // Coins scaling
+    const coins = lv * 50000;
+    free.push({type:'coins', val:coins, icon:'🪙', label:'Coins', display: fmtNum(coins)});
+
+    // Gems every 5 levels (premium gets 2x)
+    if(lv % 5 === 0){
+      free.push({type:'gems', val:lv*2, icon:'💎', label:'Gems', display:lv*2+' Gems'});
+      prem.push({type:'gems', val:lv*4, icon:'💎', label:'Bonus Gems', display:'+'+lv*4+' Gems'});
+    }
+
+    // Premium coins bonus every level
+    prem.push({type:'coins', val:coins*2, icon:'🪙', label:'Premium Coins', display:fmtNum(coins*2)});
+
+    // Extra gems every 10 levels (premium only)
+    if(lv % 10 === 0){
+      prem.push({type:'gems', val:lv*10, icon:'💎', label:'Premium Gems', display:lv*10+' Gems'});
+    }
+
+    // Pets
+    if(petLevels[lv]){
+      free.push({type:'pet', petId:petLevels[lv].id, icon:petLevels[lv].icon, label:'Season Pet', display:petLevels[lv].name});
+    }
+    if(premLevels[lv]){
+      prem.push({type:'pet', petId:premLevels[lv].id, icon:premLevels[lv].icon, label:'Premium Pet', display:premLevels[lv].name, premium:true});
+    }
+
+    // Special milestones
+    if(lv === 50){
+      free.push({type:'gems', val:500, icon:'💎', label:'SEASON COMPLETE!', display:'500 Gems'});
+      prem.push({type:'gems', val:2000, icon:'💎', label:'PREMIUM COMPLETE!', display:'2000 Bonus Gems'});
+    }
+
+    track.push({level:lv, free, premium:prem});
+  }
+  return track;
+}
+
+function renderBattlePass(){
+  if(!S.profile) return;
+
+  const season = getBpSeason();
+  const seasonKey = getBpSeasonKey();
+  const bpData = S.profile.battlePass?.[seasonKey] || {};
+  const xp = bpData.xp || 0;
+  const level = getBpLevel(xp);
+  const xpInto = getBpXpIntoLevel(xp);
+  const isPremium = bpData.premium === true;
+  const claimed = bpData.claimed || [];
+
+  // Register season pets so getItem() can find them
+  for(const pet of (season.pets||[])){
+    if(pet && !getItem(pet.id)) SHOP_PETS.push(pet);
+  }
+
+  // Header
+  document.getElementById('bp-season-title').textContent = season.icon + ' ' + season.name;
+  document.getElementById('bp-season-subtitle').textContent = season.subtitle;
+  document.getElementById('bp-level-badge').textContent = `LV ${level}`;
+  const xpLabel = level >= BP_MAX_LEVEL ? 'MAX LEVEL' : `${fmtNum(xpInto)} / ${fmtNum(BP_XP_PER_LEVEL)} XP to next level`;
+  document.getElementById('bp-xp-label').textContent = xpLabel;
+  document.getElementById('bp-xp-fill').style.width = level >= BP_MAX_LEVEL ? '100%' : ((xpInto/BP_XP_PER_LEVEL)*100)+'%';
+  document.getElementById('bp-premium-badge').classList.toggle('hidden', !isPremium);
+  document.getElementById('bp-buy-cta').style.display = isPremium ? 'none' : '';
+
+  // Track
+  const track = buildBpTrack(season);
+  const container = document.getElementById('bp-track');
+  container.innerHTML = '';
+
+  track.forEach(tier => {
+    const reached = level >= tier.level;
+    const row = document.createElement('div');
+    row.className = 'bp-tier';
+
+    // Spine line (visual connector)
+    const spine = document.createElement('div');
+    spine.className = 'bp-spine' + (reached ? ' bp-spine-done' : '');
+    row.appendChild(spine);
+
+    // Level number
+    const num = document.createElement('div');
+    num.className = 'bp-tier-num' + (level === tier.level ? ' bp-tier-current' : reached ? ' bp-tier-done' : '');
+    num.innerHTML = reached ? `<span style="color:#22c55e">✓</span><br><span style="font-size:.62rem">${tier.level}</span>` : tier.level;
+    row.appendChild(num);
+
+    // Free rewards
+    const freeCol = document.createElement('div');
+    freeCol.style.cssText = 'display:flex;flex-direction:column;gap:4px;padding:4px 4px 4px 0;';
+    tier.free.forEach(r => {
+      const claimKey = `${tier.level}_free_${r.type}_${r.val||r.petId}`;
+      const isClaimed = claimed.includes(claimKey);
+      const canClaim = reached && !isClaimed;
+      const card = document.createElement('div');
+      card.className = `bp-reward-card ${isClaimed?'bp-claimed':''}`;
+      card.innerHTML = `<span class="bp-tag-free bp-reward-tag">FREE</span><span class="bp-reward-icon">${r.icon}</span><div class="bp-reward-label">${r.label}</div><div class="bp-reward-val">${r.display}</div>${canClaim?`<button class="bp-claim-btn" onclick="claimBpReward('${claimKey}','${r.type}',${r.val||0},'${r.petId||''}')">CLAIM</button>`:''}`;
+      freeCol.appendChild(card);
+    });
+    row.appendChild(freeCol);
+
+    // Premium rewards
+    const premCol = document.createElement('div');
+    premCol.style.cssText = 'display:flex;flex-direction:column;gap:4px;padding:4px 4px 4px 0;';
+    tier.premium.forEach(r => {
+      const claimKey = `${tier.level}_prem_${r.type}_${r.val||r.petId}`;
+      const isClaimed = claimed.includes(claimKey);
+      const canClaim = reached && isPremium && !isClaimed;
+      const card = document.createElement('div');
+      card.className = `bp-reward-card bp-premium-card ${isClaimed?'bp-claimed':(!isPremium||!reached)?'bp-locked':''}`;
+      const lockIcon = !isPremium ? '🔒 ' : '';
+      card.innerHTML = `<span class="bp-tag-premium bp-reward-tag">⭐ PREMIUM</span><span class="bp-reward-icon">${r.icon}</span><div class="bp-reward-label">${lockIcon}${r.label}</div><div class="bp-reward-val">${r.display}</div>${canClaim?`<button class="bp-claim-btn" onclick="claimBpReward('${claimKey}','${r.type}',${r.val||0},'${r.petId||''}')">CLAIM</button>`:''}`;
+      premCol.appendChild(card);
+    });
+    row.appendChild(premCol);
+
+    container.appendChild(row);
+  });
+}
+
+async function claimBpReward(claimKey, type, val, petId){
+  if(!S.user||!S.profile) return;
+  const seasonKey = getBpSeasonKey();
+  const bpData = S.profile.battlePass?.[seasonKey] || {};
+  const claimed = [...(bpData.claimed||[])];
+  if(claimed.includes(claimKey)){ toast('Already claimed!','error'); return; }
+  claimed.push(claimKey);
+
+  if(type==='coins'){
+    S.profile.coins = (S.profile.coins||0) + val;
+    updateCoinDisplay(S.profile.coins);
+    toast(`🪙 +${fmtNum(val)} coins claimed!`, 'gold', 3000);
+  } else if(type==='gems'){
+    await grantGems(val);
+    toast(`💎 +${val} gems claimed!`, 'gold', 3000);
+  } else if(type==='pet'){
+    const pet = getItem(petId);
+    if(pet){
+      const inv = {itemId:petId, uniqueId:genUID(), crateSource:'battlepass', obtainedAt:new Date().toISOString()};
+      S.inventory.push(inv);
+      if(!S.profile.seenItems) S.profile.seenItems=[];
+      if(!S.profile.seenItems.includes(petId)) S.profile.seenItems.push(petId);
+      toast(`${pet.icon} ${pet.name} added to your inventory!`, 'gold', 5000);
+    }
+  }
+
+  if(!S.profile.battlePass) S.profile.battlePass = {};
+  if(!S.profile.battlePass[seasonKey]) S.profile.battlePass[seasonKey] = {};
+  S.profile.battlePass[seasonKey].claimed = claimed;
+  S.profile.totalValue = S.inventory.reduce((s,i)=>{const it=getInvEffectiveItem(i);return s+(it?it.value:0);},0);
+
+  try{
+    const update = {totalValue:S.profile.totalValue};
+    update[`battlePass.${seasonKey}.claimed`] = claimed;
+    if(type==='coins') update.coins = S.profile.coins;
+    if(type==='pet') update.inventory = S.inventory;
+    await db.collection('users').doc(S.user.uid).update(update);
+  }catch(e){ toast('Save error: '+e.message,'error'); return; }
+
+  renderBattlePass();
+}
+
+async function grantBpXp(crate){
+  if(!S.user||!S.profile||!crate) return;
+  const xpGain = getBpXpForCrate(crate);
+  if(!xpGain) return;
+  const seasonKey = getBpSeasonKey();
+  if(!S.profile.battlePass) S.profile.battlePass = {};
+  if(!S.profile.battlePass[seasonKey]) S.profile.battlePass[seasonKey] = {xp:0, claimed:[]};
+  const prevLevel = getBpLevel(S.profile.battlePass[seasonKey].xp||0);
+  S.profile.battlePass[seasonKey].xp = (S.profile.battlePass[seasonKey].xp||0) + xpGain;
+  const newLevel = getBpLevel(S.profile.battlePass[seasonKey].xp);
+  if(newLevel > prevLevel) toast(`🎖️ Battle Pass Level Up! Now Level ${newLevel}!`, 'gold', 4000);
+  try{
+    await db.collection('users').doc(S.user.uid).update({
+      [`battlePass.${seasonKey}.xp`]: S.profile.battlePass[seasonKey].xp
+    });
+  }catch(e){}
+  if(document.getElementById('page-battlepass')?.classList.contains('active')) renderBattlePass();
+}
+
+async function buyPremiumPass(){
+  if(!S.user||!S.profile){ toast('Must be logged in.', 'error'); return; }
+  const seasonKey = getBpSeasonKey();
+  const season = getBpSeason();
+  toast(`To get the Premium Pass ($15/month), go to the Shop page and buy the "${season.name} Premium Pass" product, then an admin will activate it for you.`, 'gold', 8000);
+  showPage('shop');
 }
 
 function updatePetSlotPurchaseCard(){
