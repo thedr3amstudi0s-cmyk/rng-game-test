@@ -2201,7 +2201,7 @@ async function buyShopPet(petId){
 }
 
 // ============================================================
-// TRADE UP — 10% per pet (capped at 100%)
+// TRADE UP — 10% per pet, always consume on fail
 // ============================================================
 function getTradeUpGroups() {
   const groups = {};
@@ -2251,7 +2251,7 @@ function openTradeUpPanel(petId, copies) {
   const overlay = document.getElementById('tradeup-overlay');
   const pet = getItem(petId);
 
-  let sacrificeCount = 1; // start at 1
+  let sacrificeCount = 1;
 
   document.getElementById('tradeup-panel-flow').innerHTML = `<span style="font-size:3.5rem">${pet.icon}</span><br><strong>${pet.name}</strong>`;
   document.getElementById('tradeup-panel-owned').innerHTML = `You have <strong>${copies.length}</strong> copies`;
@@ -2290,7 +2290,7 @@ async function executeTradeUp(petId, count) {
   const available = groups[petId] || [];
   if (available.length < count) return toast('Not enough copies', 'error');
 
-  // Sacrifice copies (ignore locked)
+  // Always remove the sacrificed pets first
   for (let i = 0; i < count; i++) {
     const copy = available[i];
     const idx = S.inventory.findIndex(inv => inv.uniqueId === copy.uniqueId);
@@ -2301,15 +2301,14 @@ async function executeTradeUp(petId, count) {
   const successChance = Math.min(100, count * 10);
   const success = Math.random() * 100 < successChance;
 
-  let resultPet = pet;
   if (success) {
+    // Success: add upgraded pet (for now same pet - improve later if wanted)
+    const newItem = {itemId: pet.id, uniqueId: genUID(), crateSource: 'tradeup', obtainedAt: new Date().toISOString()};
+    S.inventory.push(newItem);
     toast(`🎉 Success! You received ${pet.name}!`, 'gold');
   } else {
-    toast(`😔 Trade up failed — ${count} copies consumed.`, 'error');
+    toast(`😔 Failed — ${count} copies consumed.`, 'error');
   }
-
-  const newItem = {itemId: resultPet.id, uniqueId: genUID(), crateSource: 'tradeup', obtainedAt: new Date().toISOString()};
-  S.inventory.push(newItem);
 
   try {
     await db.collection('users').doc(S.user.uid).update({inventory: S.inventory});
