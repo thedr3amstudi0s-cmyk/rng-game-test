@@ -2201,7 +2201,7 @@ async function buyShopPet(petId){
 }
 
 // ============================================================
-// TRADE UP — Fixed & Complete
+// TRADE UP — 10% per pet (capped at 100%)
 // ============================================================
 function getTradeUpGroups() {
   const groups = {};
@@ -2225,53 +2225,53 @@ function renderTradeUpPage() {
 
   Object.keys(petGroups).forEach(petId => {
     const copies = petGroups[petId];
-    if (copies.length < 2) return;
+    if (copies.length < 1) return;
 
     const pet = getItem(petId);
-    const unlockedCount = copies.filter(c => c.locked !== true).length;
-
-    if (unlockedCount >= 2) hasEligible = true;
+    hasEligible = true;
 
     const card = document.createElement('div');
     card.className = 'tradeup-group-card';
     card.innerHTML = `
       <span class="tradeup-group-icon">${pet.icon}</span>
       <div class="tradeup-group-name">${pet.name}</div>
-      <div class="tradeup-group-count">${copies.length} copies • ${unlockedCount} unlocked</div>
+      <div class="tradeup-group-count">${copies.length} copies</div>
       <span class="tradeup-group-arrow">→</span>
     `;
 
-    card.onclick = () => {
-      if (unlockedCount < 2) {
-        toast(`Need at least 2 unlocked copies of ${pet.name}.`, 'error');
-        return;
-      }
-      openTradeUpPanel(petId, copies, unlockedCount);
-    };
+    card.onclick = () => openTradeUpPanel(petId, copies);
     groupsEl.appendChild(card);
   });
 
   emptyEl.classList.toggle('hidden', hasEligible);
 }
 
-function openTradeUpPanel(petId, copies, unlockedCount) {
+function openTradeUpPanel(petId, copies) {
   const panel = document.getElementById('tradeup-panel');
   const overlay = document.getElementById('tradeup-overlay');
   const pet = getItem(petId);
 
-  let sacrificeCount = 2;
+  let sacrificeCount = 1; // start at 1
 
   document.getElementById('tradeup-panel-flow').innerHTML = `<span style="font-size:3.5rem">${pet.icon}</span><br><strong>${pet.name}</strong>`;
-  document.getElementById('tradeup-panel-owned').innerHTML = `You have <strong>${copies.length}</strong> copies<br><strong style="color:#22c55e">${unlockedCount}</strong> unlocked`;
+  document.getElementById('tradeup-panel-owned').innerHTML = `You have <strong>${copies.length}</strong> copies`;
 
   const countVal = document.getElementById('tradeup-count-val');
   countVal.textContent = sacrificeCount;
 
-  document.getElementById('tradeup-count-minus').onclick = () => { if(sacrificeCount > 2) sacrificeCount--; countVal.textContent = sacrificeCount; updateChance(); };
-  document.getElementById('tradeup-count-plus').onclick = () => { if(sacrificeCount < unlockedCount) sacrificeCount++; countVal.textContent = sacrificeCount; updateChance(); };
+  document.getElementById('tradeup-count-minus').onclick = () => { 
+    if(sacrificeCount > 1) sacrificeCount--; 
+    countVal.textContent = sacrificeCount; 
+    updateChance(); 
+  };
+  document.getElementById('tradeup-count-plus').onclick = () => { 
+    if(sacrificeCount < copies.length) sacrificeCount++; 
+    countVal.textContent = sacrificeCount; 
+    updateChance(); 
+  };
 
   function updateChance() {
-    const chance = Math.min(92, 25 + (sacrificeCount-2)*12);
+    const chance = Math.min(100, sacrificeCount * 10);
     document.getElementById('tradeup-chance-display').innerHTML = `Success Chance: <span style="color:#22c55e">${chance}%</span>`;
   }
   updateChance();
@@ -2288,23 +2288,24 @@ function openTradeUpPanel(petId, copies, unlockedCount) {
 async function executeTradeUp(petId, count) {
   const groups = getTradeUpGroups();
   const available = groups[petId] || [];
-  const toSacrifice = available.filter(c => c.locked !== true).slice(0, count);
+  if (available.length < count) return toast('Not enough copies', 'error');
 
-  if (toSacrifice.length < count) return toast('Not enough unlocked copies', 'error');
-
-  // Sacrifice
-  for (const copy of toSacrifice) {
-    const idx = S.inventory.findIndex(i => i.uniqueId === copy.uniqueId);
+  // Sacrifice copies (ignore locked)
+  for (let i = 0; i < count; i++) {
+    const copy = available[i];
+    const idx = S.inventory.findIndex(inv => inv.uniqueId === copy.uniqueId);
     if (idx > -1) S.inventory.splice(idx, 1);
   }
 
   const pet = getItem(petId);
-  const success = Math.random() * 100 < Math.min(92, 25 + (count-2)*12);
-  let resultPet = pet; // TODO: Implement real upgrade tiers here
+  const successChance = Math.min(100, count * 10);
+  const success = Math.random() * 100 < successChance;
 
+  let resultPet = pet;
   if (success) {
-    // Placeholder — upgrade to next rarity (expand this)
-    resultPet = pet;
+    toast(`🎉 Success! You received ${pet.name}!`, 'gold');
+  } else {
+    toast(`😔 Trade up failed — ${count} copies consumed.`, 'error');
   }
 
   const newItem = {itemId: resultPet.id, uniqueId: genUID(), crateSource: 'tradeup', obtainedAt: new Date().toISOString()};
@@ -2312,7 +2313,6 @@ async function executeTradeUp(petId, count) {
 
   try {
     await db.collection('users').doc(S.user.uid).update({inventory: S.inventory});
-    toast(success ? `🎉 Upgraded to ${resultPet.name}!` : `😔 Failed. Copies consumed.`, success ? 'gold' : 'error');
     renderTradeUpPage();
     renderInventory();
   } catch(e) {
