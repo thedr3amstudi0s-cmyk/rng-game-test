@@ -2660,7 +2660,17 @@ function getEquippedPet(){
 
 // ====================== VIP HELPERS ======================
 function hasVipPetEquipped() {
-  return getAllEquippedPets().some(pet => pet && pet.id === 'p_vip1');
+  if(!S.profile) return false;
+  // Check every slot directly — don't rely on the getAllEquippedPets chain
+  for(const f of PET_SLOT_FIELDS){
+    const uid = S.profile[f];
+    if(!uid) continue;
+    const inv = S.inventory.find(i => i.uniqueId === uid);
+    if(!inv) continue;
+    const base = getItem(inv.itemId);
+    if(base && base.id === 'p_vip1') return true;
+  }
+  return false;
 }
 
 // 2X PET CHECK
@@ -4180,6 +4190,10 @@ document.getElementById('btn-open-crate').addEventListener('click', async () => 
 
   const isVip = hasVipPetEquipped();
   const openCount = getMultiOpenCount();
+  // DEBUG — remove after confirming fix
+  console.log('[OPEN] slots:', PET_SLOT_FIELDS.map(f=>f+'='+S.profile?.[f]).join(' | '));
+  console.log('[OPEN] getAllEquippedPets:', getAllEquippedPets().map(p=>p?.id+'/'+p?.perk));
+  console.log('[OPEN] isVip:', isVip, 'openCount:', openCount);
   const price = getTotalOpenPrice(crate);
 
   if (S.profile.coins < price) {
