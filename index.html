@@ -2503,7 +2503,11 @@ const ACHIEVEMENTS = [
 ];
 
 function getItem(id){
-  return ITEMS.find(i=>i.id===id) || Object.values(PETS_BY_CRATE).flat().find(p=>p.id===id) || SHOP_PETS.find(p=>p.id===id);
+  const found = ITEMS.find(i=>i.id===id) || Object.values(PETS_BY_CRATE).flat().find(p=>p.id===id) || SHOP_PETS.find(p=>p.id===id);
+  if(found) return found;
+  // BP pets might not be registered yet — do it now and retry once
+  if(typeof registerBpPets === 'function') registerBpPets();
+  return SHOP_PETS.find(p=>p.id===id) || null;
 }
 function getRarity(k){return RARITIES[k]||RARITIES.common;}
 function fmtNum(n){
@@ -3170,6 +3174,7 @@ function startAuthObserver(){
       S.inventory=[...S.profile.inventory||[]];
       S.hasAutoRoll = S.profile.hasAutoRoll === true;
       S.gems = S.profile.gems || 0;
+      registerBpPets(); // register season pets immediately so getItem() never returns null
       sanitizeEquippedSlots();
       updateAutoRollUI();
       updateGemDisplay();
