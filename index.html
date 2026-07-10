@@ -2660,8 +2660,7 @@ function getEquippedPet(){
 
 // ====================== VIP HELPERS ======================
 function hasVipPetEquipped() {
-  const pet = getEquippedPet();
-  return pet && pet.id === "p_vip1";
+  return getAllEquippedPets().some(pet => pet && pet.id === 'p_vip1');
 }
 
 // 2X PET CHECK
