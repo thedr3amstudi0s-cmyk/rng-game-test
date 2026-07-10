@@ -249,6 +249,22 @@ input,select{font-family:inherit;color:inherit;border:none;outline:none;backgrou
 .bp-claim-btn:disabled{opacity:.4;cursor:default;}
 @media(max-width:600px){.bp-tier{grid-template-columns:38px 1fr 1fr;} .bp-buy-cta{flex-direction:column;}}
 
+/* QUESTS */
+.quest-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;display:flex;align-items:center;gap:14px;}
+.quest-card.quest-done{border-color:#22c55e44;opacity:.75;}
+.quest-icon{font-size:1.6rem;flex-shrink:0;}
+.quest-info{flex:1;min-width:0;}
+.quest-name{font-family:var(--font-d);font-size:.78rem;font-weight:700;color:var(--text-1);margin-bottom:2px;}
+.quest-desc{font-size:.72rem;color:var(--text-2);margin-bottom:6px;}
+.quest-bar-track{height:6px;background:var(--bg-dark);border-radius:4px;overflow:hidden;margin-bottom:4px;}
+.quest-bar-fill{height:100%;background:linear-gradient(90deg,#a855f7,#3b82f6);border-radius:4px;transition:width .4s ease;}
+.quest-progress-label{font-family:var(--font-m);font-size:.65rem;color:var(--text-3);}
+.quest-xp-badge{background:var(--bg-dark);border:1px solid #a855f744;border-radius:20px;padding:4px 10px;font-family:var(--font-d);font-size:.65rem;font-weight:700;color:#a855f7;white-space:nowrap;}
+.quest-done-check{color:#22c55e;font-size:1.2rem;flex-shrink:0;}
+.quest-type-badge{display:inline-block;font-size:.55rem;font-family:var(--font-d);font-weight:700;padding:1px 6px;border-radius:8px;margin-bottom:4px;}
+.quest-daily{background:#3b82f622;color:#3b82f6;}
+.quest-weekly{background:#f59e0b22;color:#f59e0b;}
+
 /* TRADE UP */
 .tradeup-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
 .tradeup-group-card{
@@ -1295,7 +1311,7 @@ input,select{font-family:inherit;color:inherit;border:none;outline:none;backgrou
       <section class="page" id="page-battlepass">
         <div class="page-header">
           <h2 id="bp-season-title">🎖️ BATTLE PASS</h2>
-          <p id="bp-season-subtitle">Earn XP by opening crates and climb 50 levels. Premium Pass holders unlock exclusive pets, gems, and coins at every tier.</p>
+          <p id="bp-season-subtitle">Complete quests to earn XP and climb 50 levels. Premium holders unlock exclusive rewards at every tier.</p>
         </div>
 
         <!-- XP bar + level + premium status -->
@@ -1322,7 +1338,12 @@ input,select{font-family:inherit;color:inherit;border:none;outline:none;backgrou
           <button class="btn-primary" style="background:linear-gradient(135deg,var(--gold),#f97316);white-space:nowrap;width:auto;padding:10px 22px" onclick="buyPremiumPass()">GET PREMIUM — $15</button>
         </div>
 
+        <!-- QUESTS -->
+        <div style="font-family:var(--font-d);font-size:.7rem;letter-spacing:.15em;color:var(--text-2);margin-bottom:12px">📋 DAILY &amp; WEEKLY QUESTS</div>
+        <div id="bp-quests" style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px"></div>
+
         <!-- Reward track -->
+        <div style="font-family:var(--font-d);font-size:.7rem;letter-spacing:.15em;color:var(--text-2);margin-bottom:12px">🎖️ REWARD TRACK</div>
         <div class="bp-track" id="bp-track"></div>
       </section>
 
@@ -6243,6 +6264,8 @@ async function approveOrder(orderId){
       const userRef = db.collection('users').doc(order.uid);
       const update = {};
       update[`battlePass.${seasonKey}.premium`] = true;
+      update[`premiumPass.${seasonKey}`] = true;
+      update.premiumPassActive = true;
       await userRef.update(update);
       await orderRef.update({
         status: 'approved',
@@ -6708,7 +6731,7 @@ function getBpSeasonKey() {
 }
 
 const BP_SEASONS = {
-  '2025-07': {
+  '2026-07': {
     name: '🎆 Independence Season', subtitle: 'July — Freedom & Fireworks',
     color: '#ef4444', icon: '🎆',
     pets: [
@@ -6717,7 +6740,7 @@ const BP_SEASONS = {
       {id:'bp_jul_3', name:'Liberty Tiger', icon:'🐯', rarity:'pet', value:15000000, perk:'gemfind', perkValue:40, perkName:'Treasure Hunter', perkDesc:'40% chance to find bonus gems on each open'},
     ],
   },
-  '2025-08': {
+  '2026-08': {
     name: '🎒 Back to School Season', subtitle: 'August — Knowledge & Growth',
     color: '#3b82f6', icon: '🎒',
     pets: [
@@ -6726,7 +6749,7 @@ const BP_SEASONS = {
       {id:'bp_aug_3', name:'Genius Owl', icon:'🦉', rarity:'pet', value:18000000, perk:'luck', perkValue:50, perkName:"Straight A's", perkDesc:'+50% better odds during luck boosts'},
     ],
   },
-  '2025-09': {
+  '2026-09': {
     name: '🍂 Fall Harvest Season', subtitle: 'September — Autumn & Change',
     color: '#f97316', icon: '🍂',
     pets: [
@@ -6735,7 +6758,7 @@ const BP_SEASONS = {
       {id:'bp_sep_3', name:'Fall Spirit Bear', icon:'🐻', rarity:'pet', value:20000000, perk:'gemfind', perkValue:50, perkName:'Acorn Hoard', perkDesc:'50% chance to find bonus gems on each open'},
     ],
   },
-  '2025-10': {
+  '2026-10': {
     name: '🎃 Halloween Season', subtitle: 'October — Spooks & Tricks',
     color: '#f97316', icon: '🎃',
     pets: [
@@ -6744,7 +6767,7 @@ const BP_SEASONS = {
       {id:'bp_oct_3', name:"Witch's Raven", icon:'🦅', rarity:'pet', value:22000000, perk:'pity', perkValue:40, perkName:'Dark Pact', perkDesc:'-40% fewer opens for guaranteed pet'},
     ],
   },
-  '2025-11': {
+  '2026-11': {
     name: '🦃 Thanksgiving Season', subtitle: 'November — Gratitude & Plenty',
     color: '#b45309', icon: '🦃',
     pets: [
@@ -6753,7 +6776,7 @@ const BP_SEASONS = {
       {id:'bp_nov_3', name:'Pilgrim Eagle', icon:'🦅', rarity:'pet', value:25000000, perk:'luck', perkValue:60, perkName:'Abundance', perkDesc:'+60% better odds during luck boosts'},
     ],
   },
-  '2025-12': {
+  '2026-12': {
     name: '🎄 Winter Season', subtitle: 'December — Giving & Wonder',
     color: '#22c55e', icon: '🎄',
     pets: [
@@ -6762,6 +6785,8 @@ const BP_SEASONS = {
       {id:'bp_dec_3', name:'Frostfire Dragon', icon:'🐉', rarity:'pet', value:30000000, perk:'sellboost', perkValue:60, perkName:'Winter Jackpot', perkDesc:'+60% coins when selling'},
     ],
   },
+  // Keep 2025 seasons so old data isn't broken
+  '2025-07': { name:'🎆 July 2025', subtitle:'Legacy season.', color:'#ef4444', icon:'🎆', pets:[] },
 };
 
 function getBpSeason() {
@@ -6829,15 +6854,18 @@ function getBpXpForCrate(crate) {
 }
 
 // Grant XP after opening a crate — takes a crate object
-async function grantBpXp(crate) {
-  if (!S.user || !S.profile || !crate) return;
-  const xpGain = getBpXpForCrate(crate);
+async function grantBpXp(amount) {
+  if (!S.user || !S.profile) return;
   const seasonKey = getBpSeasonKey();
   if (!S.profile.battlePass) S.profile.battlePass = {};
-  if (!S.profile.battlePass[seasonKey]) S.profile.battlePass[seasonKey] = { xp: 0, claimed: [], premium: false };
+  // CRITICAL: never overwrite existing season data — only set defaults if key truly absent
+  if (!S.profile.battlePass[seasonKey]) {
+    S.profile.battlePass[seasonKey] = { xp: 0, claimed: [] };
+    // Do NOT set premium:false here — Firestore is the source of truth for premium
+  }
 
   const prevLevel = getBpLevel(S.profile.battlePass[seasonKey].xp || 0);
-  S.profile.battlePass[seasonKey].xp = (S.profile.battlePass[seasonKey].xp || 0) + xpGain;
+  S.profile.battlePass[seasonKey].xp = (S.profile.battlePass[seasonKey].xp || 0) + amount;
   const newLevel = getBpLevel(S.profile.battlePass[seasonKey].xp);
 
   if (newLevel > prevLevel) {
@@ -6845,13 +6873,166 @@ async function grantBpXp(crate) {
   }
 
   try {
+    // Only increment XP — never touch premium flag
     await db.collection('users').doc(S.user.uid).update({
-      [`battlePass.${seasonKey}.xp`]: firebase.firestore.FieldValue.increment(xpGain)
+      [`battlePass.${seasonKey}.xp`]: firebase.firestore.FieldValue.increment(amount)
     });
   } catch(e) { console.error('BP XP save error', e); }
 
   if (document.getElementById('page-battlepass')?.classList.contains('active')) {
     renderBattlePass();
+  }
+}
+
+// ============================================================
+// QUEST SYSTEM
+// ============================================================
+
+// Quest definitions — daily resets each UTC day, weekly resets each Monday UTC
+function getBpQuests() {
+  const now = new Date();
+  const dayKey  = `${now.getUTCFullYear()}-${now.getUTCMonth()+1}-${now.getUTCDate()}`;
+  // Monday-based week key
+  const dayOfWeek = now.getUTCDay(); // 0=Sun
+  const monday = new Date(now);
+  monday.setUTCDate(now.getUTCDate() - ((dayOfWeek + 6) % 7));
+  const weekKey = `week-${monday.getUTCFullYear()}-${monday.getUTCMonth()+1}-${monday.getUTCDate()}`;
+
+  return [
+    // DAILY QUESTS
+    { id:`daily_5opens_${dayKey}`,  type:'daily',  icon:'📦', name:'Crate Opener',    desc:'Open 5 crates',          stat:'cratesOpened',   goal:5,    xp:150 },
+    { id:`daily_3sells_${dayKey}`,  type:'daily',  icon:'💰', name:'Quick Flip',      desc:'Sell 3 items',           stat:'itemsSold',       goal:3,    xp:100 },
+    { id:`daily_1lucky_${dayKey}`,  type:'daily',  icon:'⚡', name:'Lucky Strike',    desc:'Trigger a luck boost',   stat:'luckBoostsUsed',  goal:1,    xp:200 },
+    { id:`daily_coins_${dayKey}`,   type:'daily',  icon:'🪙', name:'Big Spender',     desc:'Spend 1M coins on crates',stat:'coinsSpentToday', goal:1000000, xp:175 },
+    // WEEKLY QUESTS
+    { id:`weekly_50opens_${weekKey}`, type:'weekly', icon:'🔥', name:'Grinder',        desc:'Open 50 crates this week',  stat:'cratesOpened',    goal:50,  xp:500 },
+    { id:`weekly_pet_${weekKey}`,     type:'weekly', icon:'🐾', name:'Pet Whisperer',  desc:'Find a pet from any crate', stat:'petsFound',        goal:1,   xp:800 },
+    { id:`weekly_500k_${weekKey}`,    type:'weekly', icon:'💎', name:'Gem Hunter',     desc:'Earn 50 gems this week',    stat:'gemsEarnedWeek',  goal:50,  xp:600 },
+    { id:`weekly_rare_${weekKey}`,    type:'weekly', icon:'🌟', name:'Rarity Chaser',  desc:'Find 3 Epic+ items',        stat:'epicsFoundWeek',  goal:3,   xp:700 },
+  ];
+}
+
+// Read quest progress from profile stats
+function getQuestProgress(stat, questId) {
+  const seasonKey = getBpSeasonKey();
+  const questData = S.profile?.battlePass?.[seasonKey]?.questProgress?.[questId] || {};
+  return questData.progress || 0;
+}
+
+// Called after crate opens, sells, etc. to update quest progress
+async function updateQuestProgress(stat, delta) {
+  if (!S.user || !S.profile) return;
+  const seasonKey = getBpSeasonKey();
+  const quests = getBpQuests();
+  const matching = quests.filter(q => q.stat === stat);
+  if (!matching.length) return;
+
+  if (!S.profile.battlePass) S.profile.battlePass = {};
+  if (!S.profile.battlePass[seasonKey]) S.profile.battlePass[seasonKey] = { xp: 0, claimed: [] };
+  if (!S.profile.battlePass[seasonKey].questProgress) S.profile.battlePass[seasonKey].questProgress = {};
+
+  const completedThisUpdate = [];
+  const firestoreUpdate = {};
+
+  for (const quest of matching) {
+    const qData = S.profile.battlePass[seasonKey].questProgress[quest.id] || {};
+    if (qData.claimed) continue; // already fully done
+
+    const prev = qData.progress || 0;
+    const newProg = Math.min(quest.goal, prev + delta);
+    S.profile.battlePass[seasonKey].questProgress[quest.id] = { ...qData, progress: newProg };
+    firestoreUpdate[`battlePass.${seasonKey}.questProgress.${quest.id}.progress`] = newProg;
+
+    if (newProg >= quest.goal && !qData.completed) {
+      S.profile.battlePass[seasonKey].questProgress[quest.id].completed = true;
+      firestoreUpdate[`battlePass.${seasonKey}.questProgress.${quest.id}.completed`] = true;
+      completedThisUpdate.push(quest);
+    }
+  }
+
+  if (!Object.keys(firestoreUpdate).length) return;
+  try {
+    await db.collection('users').doc(S.user.uid).update(firestoreUpdate);
+  } catch(e) { console.error('Quest progress save error', e); }
+
+  for (const q of completedThisUpdate) {
+    toast(`📋 Quest Complete: ${q.name}! Claim +${q.xp} XP on the Battle Pass.`, 'gold', 5000);
+  }
+
+  if (document.getElementById('page-battlepass')?.classList.contains('active')) {
+    renderBattlePass();
+  }
+}
+
+async function claimQuestXp(questId) {
+  if (!S.user || !S.profile) return;
+  const seasonKey = getBpSeasonKey();
+  const quests = getBpQuests();
+  const quest = quests.find(q => q.id === questId);
+  if (!quest) return;
+
+  const qData = S.profile?.battlePass?.[seasonKey]?.questProgress?.[questId] || {};
+  if (qData.claimed) { toast('Already claimed!', 'error'); return; }
+  if (!qData.completed && (qData.progress || 0) < quest.goal) { toast('Quest not complete yet!', 'error'); return; }
+
+  // Mark claimed locally
+  if (!S.profile.battlePass[seasonKey].questProgress) S.profile.battlePass[seasonKey].questProgress = {};
+  S.profile.battlePass[seasonKey].questProgress[questId] = { ...qData, claimed: true, completed: true };
+
+  // Grant XP
+  const prevLevel = getBpLevel(S.profile.battlePass[seasonKey].xp || 0);
+  S.profile.battlePass[seasonKey].xp = (S.profile.battlePass[seasonKey].xp || 0) + quest.xp;
+  const newLevel = getBpLevel(S.profile.battlePass[seasonKey].xp);
+  if (newLevel > prevLevel) toast(`🎖️ Battle Pass Level Up! Now Level ${newLevel}!`, 'gold', 4000);
+
+  toast(`+${quest.xp} XP from "${quest.name}"!`, 'gold', 3000);
+
+  try {
+    await db.collection('users').doc(S.user.uid).update({
+      [`battlePass.${seasonKey}.xp`]: firebase.firestore.FieldValue.increment(quest.xp),
+      [`battlePass.${seasonKey}.questProgress.${questId}.claimed`]: true,
+      [`battlePass.${seasonKey}.questProgress.${questId}.completed`]: true,
+    });
+  } catch(e) { toast('Save error: ' + e.message, 'error'); }
+
+  renderBattlePass();
+}
+
+function renderBpQuests() {
+  const container = document.getElementById('bp-quests');
+  if (!container) return;
+  const seasonKey = getBpSeasonKey();
+  const questProgress = S.profile?.battlePass?.[seasonKey]?.questProgress || {};
+  const quests = getBpQuests();
+
+  container.innerHTML = '';
+  for (const quest of quests) {
+    const qData   = questProgress[quest.id] || {};
+    const prog    = Math.min(quest.goal, qData.progress || 0);
+    const done    = qData.completed || prog >= quest.goal;
+    const claimed = qData.claimed || false;
+    const pct     = Math.round((prog / quest.goal) * 100);
+
+    const card = document.createElement('div');
+    card.className = `quest-card${claimed ? ' quest-done' : ''}`;
+
+    card.innerHTML = `
+      <div class="quest-icon">${quest.icon}</div>
+      <div class="quest-info">
+        <span class="quest-type-badge ${quest.type === 'daily' ? 'quest-daily' : 'quest-weekly'}">${quest.type === 'daily' ? '🌅 DAILY' : '📅 WEEKLY'}</span>
+        <div class="quest-name">${quest.name}</div>
+        <div class="quest-desc">${quest.desc}</div>
+        <div class="quest-bar-track"><div class="quest-bar-fill" style="width:${pct}%"></div></div>
+        <div class="quest-progress-label">${fmtNum(prog)} / ${fmtNum(quest.goal)}${claimed ? ' — Done ✓' : ''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <span class="quest-xp-badge">+${quest.xp} XP</span>
+        ${claimed ? `<span class="quest-done-check">✓</span>` :
+          done ? `<button class="bp-claim-btn" style="width:auto;padding:6px 14px" onclick="claimQuestXp('${quest.id}')">CLAIM</button>` :
+          ''}
+      </div>
+    `;
+    container.appendChild(card);
   }
 }
 
@@ -6872,11 +7053,15 @@ function buildBpTrack(season) {
     } else if (lv === BP_MAX_LEVEL) {
       free = { type:'gems', val:500, icon:'💎', label:'Season Complete!', display:'500 Gems' };
     } else if (lv % 10 === 0) {
-      free = { type:'gems', val:lv*5, icon:'💎', label:'Gems', display:`${lv*5} Gems` };
+      const gems = Math.round(5 + (lv/BP_MAX_LEVEL) * 45); // 6→45 gems
+      free = { type:'gems', val:gems, icon:'💎', label:'Gems', display:`${gems} Gems` };
     } else if (lv % 5 === 0) {
-      free = { type:'gems', val:lv*2, icon:'💎', label:'Gems', display:`${lv*2} Gems` };
+      const gems = Math.round(2 + (lv/BP_MAX_LEVEL) * 18); // 2→18 gems
+      free = { type:'gems', val:gems, icon:'💎', label:'Gems', display:`${gems} Gems` };
     } else {
-      const coins = Math.floor(lv * 75000 * (1 + lv * 0.04));
+      // Scale coins: 100 at lv1 → 10,000 at lv50 (exponential feel)
+      const t = (lv - 1) / (BP_MAX_LEVEL - 1); // 0 → 1
+      const coins = Math.round(100 + t * t * 9900); // quadratic: 100 → 10000
       free = { type:'coins', val:coins, icon:'🪙', label:'Coins', display:fmtNum(coins) };
     }
 
@@ -6888,11 +7073,15 @@ function buildBpTrack(season) {
     } else if (lv === BP_MAX_LEVEL) {
       prem = { type:'gems', val:2000, icon:'💎', label:'⭐ Season Complete!', display:'2,000 Gems' };
     } else if (lv % 10 === 0) {
-      prem = { type:'gems', val:lv*20, icon:'💎', label:'⭐ Premium Gems', display:`${lv*20} Gems` };
+      const gems = Math.round(20 + (lv/BP_MAX_LEVEL) * 180); // 24→200 gems
+      prem = { type:'gems', val:gems, icon:'💎', label:'⭐ Premium Gems', display:`${gems} Gems` };
     } else if (lv % 5 === 0) {
-      prem = { type:'gems', val:lv*8, icon:'💎', label:'⭐ Premium Gems', display:`${lv*8} Gems` };
+      const gems = Math.round(8 + (lv/BP_MAX_LEVEL) * 72); // 9→80 gems
+      prem = { type:'gems', val:gems, icon:'💎', label:'⭐ Premium Gems', display:`${gems} Gems` };
     } else {
-      const pcoins = Math.floor(lv * 200000 * (1 + lv * 0.04));
+      // Premium coins: 500 at lv1 → 50,000 at lv50
+      const t = (lv - 1) / (BP_MAX_LEVEL - 1);
+      const pcoins = Math.round(500 + t * t * 49500);
       prem = { type:'coins', val:pcoins, icon:'🪙', label:'⭐ Premium Coins', display:fmtNum(pcoins) };
     }
 
@@ -6912,7 +7101,10 @@ function renderBattlePass() {
   const level     = getBpLevel(totalXp);
   const xpInto    = getBpXpIntoLevel(totalXp);
   const xpNeeded  = getBpXpNeededForLevel(level);
-  const isPremium = bpData.premium === true;
+  // Check multiple places premium might be stored
+  const isPremium = bpData.premium === true
+    || S.profile.premiumPass?.[seasonKey] === true
+    || S.profile.premiumPassActive === true;
   const claimed   = bpData.claimed || [];
 
   // Header
