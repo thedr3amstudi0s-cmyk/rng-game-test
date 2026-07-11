@@ -1806,14 +1806,19 @@ const PETS_BY_CRATE = {
   ],
   'genesis': [
     {id:'p_gen1', name:'Genesis Phoenix', rarity:'pet', icon:'🐦‍🔥', value:95000000, desc:'Birth of all fortune.', perk:'luck', perkName:'Genesis Luck II', perkDesc:'Luck boosts are 2.5x as powerful + fill 70% faster + +15% base luck on every open'},
-    {id:'p_gen2', name:'Origin Speedster', rarity:'pet', icon:'⚡', value:95000000, desc:'The first burst of speed.', perk:'speed', perkName:'Quad Crack', perkDesc:'Open 4 crates at once for the price of 1'},
+    {id:'p_gen2', name:'Origin Speedster', rarity:'pet', icon:'⚡', value:95000000, desc:'The first burst of speed.', perk:'speed', perkName:'Quad Crack', perkDesc:'Open 4 crates at once for the price of 2'},
     {id:'p_gen3', name:'Creation Boar', rarity:'pet', icon:'🐗', value:95000000, desc:'Source of all value.', perk:'discount', perkName:'Genesis Deal II', perkDesc:'-35% off all crate prices + +25% sell bonus + +15% gem find chance'},
   ],
   // VIP-exclusive pet — purchase only, NEVER drops from any crate.
   // Kept in its own bucket so it's excluded from getPetsForCrate() / crate odds entirely.
-   'vip': [
+  'vip': [
     {id:'p_vip1', name:'VIP Golden Drake', rarity:'pet', icon:'🐉', value:0, desc:'A mark of true status. Bought, not found.', perk:'vip', perkName:'VIP Golden Drake', perkDesc:'2x Rolls • 2x Speed', sellable: false, vip: true},
   ],
+  
+  'shop': [
+  {id:'p_shop1', name:'Waffle', rarity:'pet', icon:'🧇', value:0, desc:'Just a waffle', perk:'speed', perkName:'Quad Crack', perkDesc:'Open 4 crates at once for the price of 2'},
+  ],
+    
   // Wheel-exclusive pet — only obtainable from the 1-in-1,000,000 Lucky Wheel segment.
   // Never drops from any crate and is not part of any crate's pet pool.
   'wheel': [
@@ -2945,16 +2950,16 @@ function getCratePrice(crate){
 
 // Total coin cost for one "open" click:
 // • 1 crate  → 100% of discounted price
-// • 2 crates → 175% total (both crates together)
-// • 4 crates → 350% total (all four crates together)
+// • 2 crates → 100% total (both crates together)
+// • 4 crates → 200% total (all four crates together)
 // • VIP      → 2 crates for price of 1 (100% total, unchanged perk)
 function getTotalOpenPrice(crate){
   const single = getCratePrice(crate);
   const count = getMultiOpenCount();
   if(count === 1) return single;
   if(hasVipPetEquipped()) return single; // VIP: 2 crates free
-  if(count === 4) return Math.floor(single * 3.50);
-  return Math.floor(single * 1.75); // 2x
+  if(count === 4) return Math.floor(single * 2);
+  return single;
 }
 
 function getMultiOpenCount(){
@@ -6332,9 +6337,9 @@ const SHOP_CASHTAG = '$DR3AMSTUDI0S';
 const DEFAULT_PRODUCTS = [
   {
     id: 'vip_pack',
-    label: 'VIP Pack — 🐉 VIP Golden Drake + 500 Gems',
+    label: 'VIP Pack — 🐉 VIP Golden Drake + 250 Gems',
     priceLabel: '$10.00',
-    reward: { type: 'bundle', petId: 'p_vip1', gems: 500 },
+    reward: { type: 'bundle', petId: 'p_vip1', gems: 250 },
     active: true,
   },
   {
@@ -6349,6 +6354,13 @@ const DEFAULT_PRODUCTS = [
     label: '⭐ PREMIUM BATTLE PASS — Unlock all Premium tier rewards for this season!',
     priceLabel: '$15.00/month',
     reward: { type: 'premiumpass' },
+    active: true,
+  },
+  {
+    id: 'waffle_pack',
+    label: '🧇A pet that can open 4x and a bunch of gems🧇',
+    priceLabel: '$20.00',
+    reward: { type: 'bundle', petId: 'p_shop1', gems: 500 },
     active: true,
   },
 ];
