@@ -1848,7 +1848,7 @@ const PETS_BY_CRATE = {
 
 // Helper to get pets for a crate
 function getPetsForCrate(crateId) {
-  return PETS_BY_CRATE[crateId] || PETS_BY_CRATE['basic']; // fallback
+  return PETS_BY_CRATE[crateId] || [];
 }
 
 const SHOP_PETS = [
